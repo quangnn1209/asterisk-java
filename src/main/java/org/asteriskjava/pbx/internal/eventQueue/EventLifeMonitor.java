@@ -22,8 +22,8 @@ public class EventLifeMonitor<T> {
     }
 
     public void assessAge() {
-        if (this.age.timeTaken() > 2000) {
-            EventLifeMonitor.logger.warn("event age : " + this.age.timeTaken()); //$NON-NLS-1$
+        if (this.age.timeTaken() > 3_600_000) { // More than 1 hour
+            EventLifeMonitor.logger.warn(this.theEvent + "event age : " + this.age.timeTaken()); //$NON-NLS-1$
         }
 
     }

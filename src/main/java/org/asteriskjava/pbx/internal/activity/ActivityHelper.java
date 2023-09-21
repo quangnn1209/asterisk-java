@@ -104,11 +104,11 @@ public abstract class ActivityHelper<T extends Activity> extends Lockable implem
             if (this.callback != null) {
                 if (this._success) {
                     this.callback.progress((T) this, ActivityStatusEnum.SUCCESS,
-                            ActivityStatusEnum.SUCCESS.getDefaultMessage());
+                        ActivityStatusEnum.SUCCESS.getDefaultMessage());
                 } else {
                     // This went badly so make certain we hang everything up
                     this.callback.progress((T) this, ActivityStatusEnum.FAILURE,
-                            ActivityStatusEnum.FAILURE.getDefaultMessage());
+                        ActivityStatusEnum.FAILURE.getDefaultMessage());
                 }
             }
         }
@@ -157,8 +157,9 @@ public abstract class ActivityHelper<T extends Activity> extends Lockable implem
     }
 
     public void progess(final T activity, final String message) {
-        this.callback.progress(activity, ActivityStatusEnum.PROGRESS, message);
-
+        if (this.callback != null) {
+            this.callback.progress(activity, ActivityStatusEnum.PROGRESS, message);
+        }
     }
 
     abstract HashSet<Class<? extends ManagerEvent>> requiredEvents();

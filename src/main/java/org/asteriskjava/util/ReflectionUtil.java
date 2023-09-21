@@ -317,15 +317,29 @@ public class ReflectionUtil {
 
                 // build jar file name, then loop through entries
                 jarFileName = URLDecoder.decode(packageURL.getFile(), "UTF-8");
-                jarFileName = jarFileName.substring(5, jarFileName.indexOf("!"));
-                logger.info(">" + jarFileName);
-                try (JarFile jf = new JarFile(jarFileName);) {
-                    jarEntries = jf.entries();
-                    while (jarEntries.hasMoreElements()) {
-                        entryName = jarEntries.nextElement().getName();
-                        if (entryName.startsWith(packageName) && entryName.endsWith(".class")) {
-                            entryName = entryName.substring(packageName.length() + 1, entryName.lastIndexOf('.'));
-                            names.add(entryName);
+                if (jarFileName.contains("/app/asterisk-agiscript-1.0.jar") && jarFileName.contains("asterisk-java.jar")) {
+                    jarFileName = "/app/asterisk-java.jar";
+                    try (JarFile jf = new JarFile(jarFileName)) {
+                        jarEntries = jf.entries();
+                        while (jarEntries.hasMoreElements()) {
+                            entryName = jarEntries.nextElement().getName();
+                            if (entryName.startsWith(packageName) && entryName.endsWith(".class")) {
+                                entryName = entryName.substring(packageName.length() + 1, entryName.lastIndexOf('.'));
+                                names.add(entryName);
+                            }
+                        }
+                    }
+                } else {
+                    jarFileName = jarFileName.substring(5, jarFileName.indexOf("!"));
+                    logger.info(">" + jarFileName);
+                    try (JarFile jf = new JarFile(jarFileName);) {
+                        jarEntries = jf.entries();
+                        while (jarEntries.hasMoreElements()) {
+                            entryName = jarEntries.nextElement().getName();
+                            if (entryName.startsWith(packageName) && entryName.endsWith(".class")) {
+                                entryName = entryName.substring(packageName.length() + 1, entryName.lastIndexOf('.'));
+                                names.add(entryName);
+                            }
                         }
                     }
                 }

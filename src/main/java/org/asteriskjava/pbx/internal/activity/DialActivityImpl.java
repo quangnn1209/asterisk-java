@@ -58,20 +58,34 @@ public class DialActivityImpl extends ActivityHelper<DialActivity> implements Di
         this.startActivity(false);
     }
 
+    public DialActivityImpl(final EndPoint originating, final EndPoint accepting, final CallerID toCallerID,
+                            final boolean hideToCallerID, Map<String, String> channelVarsToSet, String dialOptions) {
+        super("Dial", null);
+        this._originating = originating;
+        this._accepting = accepting;
+        this.toCallerID = toCallerID;
+        this.hideToCallerId = hideToCallerID;
+        this.cancelledByOperator = false;
+        this.channelVarsToSet = channelVarsToSet;
+        this.dialOptions = dialOptions;
+
+        this.startActivity(false);
+    }
+
     @Override
     public boolean doActivity() throws PBXException {
         boolean success = false;
 
         try (Dial nr = new Dial(this.toCallerID.toString())) {
             DialActivityImpl.logger.debug("*******************************************************************************");
-            DialActivityImpl.logger.info("***********                    begin dial out                  ****************");
+            DialActivityImpl.logger.debug("***********                    begin dial out                  ****************");
             DialActivityImpl.logger.info("***********               " + this._accepting + "             ****************");
             DialActivityImpl.logger.debug("*******************************************************************************");
 
             final AsteriskSettings profile = PBXFactory.getActiveProfile();
 
             final OriginateResult[] resultChannels = nr.dial(this, this._originating, this._accepting,
-                    profile.getManagementContext(), this.toCallerID, this.hideToCallerId, channelVarsToSet, dialOptions);
+                profile.getManagementContext(), this.toCallerID, this.hideToCallerId, channelVarsToSet, dialOptions);
 
             if ((resultChannels[0] == null) || (resultChannels[1] == null)) {
                 // the dial failed

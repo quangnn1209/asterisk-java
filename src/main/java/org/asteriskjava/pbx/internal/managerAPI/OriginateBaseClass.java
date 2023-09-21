@@ -29,6 +29,8 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
 
     volatile private boolean originateSuccess;
 
+    volatile private String originateMessage;
+
     private final Channel monitorChannel1;
 
     private boolean hungup = false;
@@ -88,7 +90,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
      */
     OriginateResult originate(final EndPoint local, final EndPoint target, final HashMap<String, String> myVars,
                               final CallerID callerID, final Integer timeout, final boolean hideCallerId, final String context) {
-        OriginateBaseClass.logger.info("originate called");
+        OriginateBaseClass.logger.debug("originate called");
         this.originateSeen = false;
         this.channelSeen = false;
 
@@ -98,8 +100,8 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             return null;
         }
 
-        OriginateBaseClass.logger.info("originate connection endPoint \n" + local + " to endPoint " + target //$NON-NLS-2$
-                + " vars " + myVars);
+        OriginateBaseClass.logger.info("originate connection endPoint " + local + " to endPoint " + target //$NON-NLS-2$
+            + " vars " + myVars);
         ManagerResponse response = null;
 
         final AsteriskSettings settings = PBXFactory.getActiveProfile();
@@ -107,7 +109,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
         final OriginateAction originate = new OriginateAction();
         this.originateID = originate.getActionId();
 
-        channelId = "" + (System.currentTimeMillis() / 1000) + ".AJ" + originateSeed.incrementAndGet();
+        channelId = (System.currentTimeMillis() / 1000) + ".AJ" + originateSeed.incrementAndGet();
         originate.setChannelId(channelId);
 
         Integer localTimeout = timeout;
@@ -156,10 +158,11 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             this.startListener();
 
             response = pbx.sendAction(originate, localTimeout);
-            OriginateBaseClass.logger.info("Originate.sendAction completed");
+            OriginateBaseClass.logger.debug("Originate.sendAction completed");
             if (response.getResponse().compareToIgnoreCase("Success") != 0) {
                 OriginateBaseClass.logger
-                        .error("Error Originating call" + originate.toString() + " : " + response.getMessage());//$NON-NLS-2$
+                    .error("Error Originating call " + originate + " : " + response.getMessage());//$NON-NLS-2$
+//                OriginateFailureHelper.add(myVars.get("Call-UUID"), response.getMessage());
                 throw new ManagerCommunicationException(response.getMessage(), null);
             }
 
@@ -167,6 +170,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             // asterisk to start the originate
             if (!originateLatch.await(localTimeout + 1000, TimeUnit.MILLISECONDS)) {
                 logger.error("Originate Latch timed out");
+//                OriginateFailureHelper.add(myVars.get("Call-UUID"), "Originate Latch timed out");
             }
         } catch (final InterruptedException e) {
             OriginateBaseClass.logger.debug(e, e);
@@ -182,10 +186,10 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             OriginateBaseClass.logger.info("new channel ok: " + this.newChannel);
         } else {
             OriginateBaseClass.logger.warn("originate failed to connect endPoint: " + local + " to ext " + target); //$NON-NLS-2$
-
+//            OriginateFailureHelper.add(myVars.get("Call-UUID"), this.originateMessage);
             if (this.newChannel != null) {
                 try {
-                    logger.warn("Hanging up");
+                    logger.debug("Hanging up");
                     pbx.hangup(this.newChannel);
                 } catch (IllegalArgumentException | IllegalStateException | PBXException e) {
                     logger.error(e, e);
@@ -200,6 +204,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
     void abort(final String reason) {
         OriginateBaseClass.logger.warn("Aborting originate ");
         this.originateSuccess = false;
+        this.originateMessage = "Aborted";
         this.result.setAbortReason(reason);
         this.hungup = true;
         if (this.newChannel != null) {
@@ -251,11 +256,13 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
 
                 if (channelId.equals(hangupEvt.getUniqueId())) {
                     this.originateSuccess = false;
+                    this.originateMessage = "Dest channel " + this.newChannel + " hungup";
                     OriginateBaseClass.logger.warn("Dest channel " + this.newChannel + " hungup");
                     originateLatch.countDown();
                 }
                 if ((this.monitorChannel1 != null) && (hangupChannel.isSame(this.monitorChannel1))) {
                     this.originateSuccess = false;
+                    this.originateMessage = "Dest channel " + this.newChannel + " hungup";
                     this.hungup = true;
                     if (this.newChannel != null) {
                         OriginateBaseClass.logger.warn("hanging up " + this.newChannel);
@@ -275,6 +282,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                 }
                 if ((this.monitorChannel2 != null) && (hangupChannel.isSame(this.monitorChannel2))) {
                     this.originateSuccess = false;
+                    this.originateMessage = "Dest channel " + this.newChannel + " hungup";
                     this.hungup = true;
                     if (this.newChannel != null) {
                         OriginateBaseClass.logger.warn("Hanging up channel " + this.newChannel);
@@ -298,14 +306,15 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
 
                 final OriginateResponseEvent response = (OriginateResponseEvent) event;
                 OriginateBaseClass.logger.debug("OriginateResponseEvent: channel="
-                        + (response.isChannel() ? response.getChannel() : response.getEndPoint()) + " originateID:"
-                        + this.originateID);
+                    + (response.isChannel() ? response.getChannel() : response.getEndPoint()) + " originateID:"
+                    + this.originateID);
                 OriginateBaseClass.logger.debug("{" + response.getReason() + ":" + response.getResponse() + "}"); //$NON-NLS-2$ //$NON-NLS-3$
                 if (this.originateID != null) {
                     if (this.originateID.compareToIgnoreCase(response.getActionId()) == 0) {
                         this.originateSuccess = response.isSuccess();
+                        this.originateMessage = response.getResponse();
                         OriginateBaseClass.logger.info("OriginateResponse: matched actionId, success="
-                                + this.originateSuccess + " channelSeen=" + this.channelSeen);
+                            + this.originateSuccess + " channelSeen=" + this.channelSeen);
 
                         this.originateSeen = true;
 
@@ -324,7 +333,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                             // NewChannelEvent doing the
                             // notify.
                             if (this.channelSeen) {
-                                OriginateBaseClass.logger.info("notify originate response event " + this.originateSuccess);
+                                OriginateBaseClass.logger.debug("notify originate response event " + this.originateSuccess);
                                 originateLatch.countDown();
                             } else {
                                 logger.error("Originate Response didn't contain the channel");
@@ -342,7 +351,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                     final Channel channel = newState.getChannel();
 
                     OriginateBaseClass.logger.info("new channel event :" + channel + " context = " + newState.getContext() //$NON-NLS-2$
-                            + " state =" + newState.getChannelStateDesc() + " state =" + newState.getChannelState()); //$NON-NLS-2$
+                        + " state =" + newState.getChannelStateDesc() + " state =" + newState.getChannelState()); //$NON-NLS-2$
 
                     handleId(channel);
                 }
@@ -356,11 +365,11 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                         channel = bridgeEvent.getChannel2();
                     }
                     if (channelId.equalsIgnoreCase(bridgeEvent.getChannel1().getUniqueId())
-                            || channelId.equalsIgnoreCase(bridgeEvent.getChannel2().getUniqueId())) {
+                        || channelId.equalsIgnoreCase(bridgeEvent.getChannel2().getUniqueId())) {
 
                         OriginateBaseClass.logger
-                                .info("new bridge event :" + channel + " channel1 = " + bridgeEvent.getChannel1() //$NON-NLS-2$
-                                        + " channel2 =" + bridgeEvent.getChannel2());
+                            .info("new bridge event :" + channel + " channel1 = " + bridgeEvent.getChannel1() //$NON-NLS-2$
+                                + " channel2 =" + bridgeEvent.getChannel2());
 
                         handleId(channel);
                     }

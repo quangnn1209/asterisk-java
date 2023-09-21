@@ -87,7 +87,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
         final CompletionAdaptor<BlindTransferActivity> completion = new CompletionAdaptor<>();
 
         final BlindTransferActivityImpl transfer = new BlindTransferActivityImpl(call, channelToTransfer, transferTarget,
-                toCallerID, autoAnswer, timeout, completion, dialOptions);
+            toCallerID, autoAnswer, timeout, completion, dialOptions);
 
         completion.waitForCompletion(timeout + 2, TimeUnit.SECONDS);
 
@@ -99,15 +99,15 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
     public void blindTransfer(Call call, Call.OperandChannel channelToTransfer, EndPoint transferTarget, CallerID toCallerID,
                               boolean autoAnswer, long timeout, ActivityCallback<BlindTransferActivity> listener, String dialOptions) {
         new BlindTransferActivityImpl(call, channelToTransfer, transferTarget, toCallerID, autoAnswer, timeout, listener,
-                dialOptions);
+            dialOptions);
 
     }
 
     public BlindTransferActivity blindTransfer(Channel agentChannel, EndPoint transferTarget, CallerID toCallerID,
                                                boolean autoAnswer, int timeout, ActivityCallback<BlindTransferActivity> iCallback, String dialOptions)
-            throws PBXException {
+        throws PBXException {
         return new BlindTransferActivityImpl(agentChannel, transferTarget, toCallerID, autoAnswer, timeout, iCallback,
-                dialOptions);
+            dialOptions);
 
     }
 
@@ -163,7 +163,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
         final CompletionAdaptor<JoinActivity> completion = new CompletionAdaptor<>();
 
         final JoinActivityImpl join = new JoinActivityImpl(lhs, originatingOperand, rhs, acceptingOperand, direction,
-                completion);
+            completion);
 
         completion.waitForCompletion(10, TimeUnit.SECONDS);
 
@@ -204,7 +204,6 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
         final DialActivityImpl dialer = new DialActivityImpl(from, to, toCallerID, false, completion, null, dialOptions);
 
         completion.waitForCompletion(3, TimeUnit.MINUTES);
-
         return dialer;
     }
 
@@ -213,11 +212,14 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
         return new DialLocalToAgiActivity(from, fromCallerID, callback, channelVarsToSet);
     }
 
-    public DialActivity dial(final EndPoint from, final CallerID fromCallerID, final EndPoint to, final CallerID toCallerID,
+    public DialActivity dial(final EndPoint from, final EndPoint to, final CallerID toCallerID,
                              final ActivityCallback<DialActivity> callback, Map<String, String> channelVarsToSet, String dialOptions) {
-        final DialActivityImpl dialer = new DialActivityImpl(from, to, toCallerID, false, callback, channelVarsToSet,
-                dialOptions);
-        return dialer;
+        return new DialActivityImpl(from, to, toCallerID, false, callback, channelVarsToSet, dialOptions);
+    }
+
+    public DialActivity dial(final EndPoint from, final EndPoint to, final CallerID toCallerID,
+                             Map<String, String> channelVarsToSet, String dialOptions) {
+        return new DialActivityImpl(from, to, toCallerID, false, channelVarsToSet, dialOptions);
     }
 
     @Override
@@ -441,7 +443,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
         } else {
             if (uniqueID != null && !uniqueID.equals(proxy.getUniqueId())) {
                 logger.info(
-                        "Found the channel(" + proxy.getUniqueId() + "), but with a different uniqueId (" + uniqueID + ")");
+                    "Found the channel(" + proxy.getUniqueId() + "), but with a different uniqueId (" + uniqueID + ")");
 
             }
         }
@@ -537,24 +539,24 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
      * @throws TimeoutException
      */
     public ManagerResponse sendAction(ManagerAction theAction)
-            throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException {
+        throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException {
         return CoherentManagerConnection.sendAction(theAction, 30000);
     }
 
     public ManagerResponse sendAction(ManagerAction theAction, int timeout)
-            throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException {
+        throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException {
         return CoherentManagerConnection.sendAction(theAction, timeout);
     }
 
     public ResponseEvents sendEventGeneratingAction(EventGeneratingAction action)
-            throws EventTimeoutException, IllegalArgumentException, IllegalStateException, IOException {
+        throws EventTimeoutException, IllegalArgumentException, IllegalStateException, IOException {
         ResponseEvents events = CoherentManagerConnection.sendEventGeneratingAction(action);
         return events;
 
     }
 
     public ResponseEvents sendEventGeneratingAction(EventGeneratingAction action, int timeout)
-            throws EventTimeoutException, IllegalArgumentException, IllegalStateException, IOException {
+        throws EventTimeoutException, IllegalArgumentException, IllegalStateException, IOException {
         return CoherentManagerConnection.sendEventGeneratingAction(action, timeout);
 
     }
@@ -579,7 +581,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
 
     public boolean isConnected() {
         return ((CoherentManagerConnection.managerConnection != null)
-                && (CoherentManagerConnection.managerConnection.getState() == ManagerConnectionState.CONNECTED));
+            && (CoherentManagerConnection.managerConnection.getState() == ManagerConnectionState.CONNECTED));
     }
 
     public boolean isMeetmeInstalled() {
@@ -658,7 +660,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
 
             channel.setCurrentActivityAction(new AgiChannelActivityHold());
             final RedirectAction redirect = new RedirectAction(channel, profile.getManagementContext(), getExtensionAgi(),
-                    1);
+                1);
 
             logger.error("Issuing redirect on channel " + channel + " to move it to the agi");
 
@@ -718,7 +720,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
         final CompletionAdaptor<DialToAgiActivity> completion = new CompletionAdaptor<>();
 
         final DialToAgiActivityImpl dialer = new DialToAgiActivityImpl(endPoint, callerID, null, false, completion,
-                channelVarsToSet, action);
+            channelVarsToSet, action);
 
         dialer.startActivity(false);
 
@@ -767,7 +769,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
                 String host = profile.getAgiHost();
                 String agi = profile.getAgiExtension();
                 pbx.addAsteriskExtension(agi, 1,
-                        "AGI(agi://" + host + "/" + ACTIVITY_AGI + "), into " + profile.getManagementContext());
+                    "AGI(agi://" + host + "/" + ACTIVITY_AGI + "), into " + profile.getManagementContext());
                 pbx.addAsteriskExtension(agi, 2, "wait(0.5), into " + profile.getManagementContext());
                 pbx.addAsteriskExtension(agi, 3, "goto(" + agi + ",1), into " + profile.getManagementContext());
 
@@ -799,7 +801,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
     }
 
     public boolean checkDialplanExists(AsteriskSettings profile)
-            throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException {
+        throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException {
         return checkDialplanExists(ACTIVITY_AGI, profile.getManagementContext());
 
     }

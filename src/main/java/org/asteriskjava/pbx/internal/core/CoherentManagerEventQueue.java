@@ -37,9 +37,9 @@ class CoherentManagerEventQueue implements ManagerEventListener, Runnable {
 
     private volatile boolean _stop = false;
 
-    private static final int QUEUE_SIZE = 1000;
+    private static final int QUEUE_SIZE = 10000000;
     private final BlockingQueue<EventLifeMonitor<org.asteriskjava.manager.event.ManagerEvent>> _eventQueue = new LinkedBlockingQueue<>(
-            QUEUE_SIZE);
+        QUEUE_SIZE);
 
     long suppressQueueSizeErrorUntil = 0;
 
@@ -77,11 +77,11 @@ class CoherentManagerEventQueue implements ManagerEventListener, Runnable {
             }
         }
 
-        if (wanted) {
+        if (false) {
             // We don't support all events.
             this._eventQueue.add(new EventLifeMonitor<>(event));
             if (_eventQueue.remainingCapacity() < QUEUE_SIZE / 10
-                    && suppressQueueSizeErrorUntil < System.currentTimeMillis()) {
+                && suppressQueueSizeErrorUntil < System.currentTimeMillis()) {
                 suppressQueueSizeErrorUntil = System.currentTimeMillis() + 1000;
                 logger.error("EventQueue more than 90% full");
             }
@@ -95,7 +95,11 @@ class CoherentManagerEventQueue implements ManagerEventListener, Runnable {
             while (!this._stop) {
                 try {
                     final EventLifeMonitor<org.asteriskjava.manager.event.ManagerEvent> elm = this._eventQueue.poll(2,
-                            TimeUnit.SECONDS);
+                        TimeUnit.SECONDS);
+                    int queuSize = this._eventQueue.size();
+                    if (queuSize > 100) {
+                        logger.info("EventQueue size: " + queuSize);
+                    }
                     if (elm != null) {
                         // A poison queue event means its time to shutdown.
                         if (elm.getEvent().getClass() == PoisonQueueEvent.class) {
@@ -140,7 +144,7 @@ class CoherentManagerEventQueue implements ManagerEventListener, Runnable {
     public void stop() {
         this._stop = true;
         try {
-            this._eventQueue.put(new EventLifeMonitor<org.asteriskjava.manager.event.ManagerEvent>(new PoisonQueueEvent()));
+            this._eventQueue.put(new EventLifeMonitor<>(new PoisonQueueEvent()));
         } catch (InterruptedException e) {
             logger.error(e, e);
 
@@ -198,22 +202,19 @@ class CoherentManagerEventQueue implements ManagerEventListener, Runnable {
 
     private void dispatchEventOnThread(final ManagerEvent event, final FilteredManagerListenerWrapper filter,
                                        final CountDownLatch latch) {
-        Runnable runner = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    final LogTime time = new LogTime();
+        Runnable runner = () -> {
+            try {
+                final LogTime time = new LogTime();
 
-                    filter._listener.onManagerEvent(event);
-                    if (time.timeTaken() > 500) {
-                        logger.warn("ManagerListener :" + filter._listener.getName() //$NON-NLS-1$
-                                + " is taken too long to process event " + event + " time taken: " + time.timeTaken()); //$NON-NLS-1$ //$NON-NLS-2$
-                    }
-                } catch (Exception e) {
-                    logger.error(e, e);
-                } finally {
-                    latch.countDown();
+                filter._listener.onManagerEvent(event);
+                if (time.timeTaken() > 500) {
+                    logger.warn("ManagerListener :" + filter._listener.getName() //$NON-NLS-1$
+                        + " is taken too long to process event " + event + " time taken: " + time.timeTaken()); //$NON-NLS-1$ //$NON-NLS-2$
                 }
+            } catch (Exception e) {
+                logger.error(e, e);
+            } finally {
+                latch.countDown();
             }
         };
 

@@ -544,17 +544,17 @@ class ChannelManager {
         final AsteriskChannelImpl destinationChannel = getChannelImplById(event.getDestUniqueId());
 
         if (sourceChannel == null) {
-            logger.warn("handleDialEvent: Ignored DialEvent for unknown source channel " + event.getChannel()
+            logger.debug("handleDialEvent: Ignored DialEvent for unknown source channel " + event.getChannel()
                     + " with unique id " + event.getUniqueId());
             return;
         }
         if (destinationChannel == null) {
             if (DialEvent.SUBEVENT_END.equalsIgnoreCase(event.getSubEvent())) {
                 sourceChannel.updateVariable(AsteriskChannel.VAR_AJ_DIAL_STATUS, event.getDialStatus());
-                logger.info("handleDialEvent: Ignored DialEvent for unknown dst channel " + event.getDestination()
+                logger.debug("handleDialEvent: Ignored DialEvent for unknown dst channel " + event.getDestination()
                         + " with unique_id " + event.getDestUniqueId());
             } else {
-                logger.warn("handleDialEvent: Ignored DialEvent for unknown dst channel " + event.getDestination()
+                logger.debug("handleDialEvent: Ignored DialEvent for unknown dst channel " + event.getDestination()
                         + " with unique_id " + event.getDestUniqueId());
             }
             return;

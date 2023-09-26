@@ -723,7 +723,7 @@ public class ManagerConnectionImpl extends Lockable implements ManagerConnection
      */
     public ManagerResponse sendAction(ManagerAction action, long timeout)
             throws IOException, TimeoutException, IllegalArgumentException, IllegalStateException {
-
+        // TODO: textback
         DefaultSendActionCallback callbackHandler = new DefaultSendActionCallback();
         ManagerResponse response = null;
         try {

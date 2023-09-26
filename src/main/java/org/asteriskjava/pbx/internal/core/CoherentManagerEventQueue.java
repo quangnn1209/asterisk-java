@@ -202,7 +202,7 @@ class CoherentManagerEventQueue implements ManagerEventListener, Runnable {
 
     private void dispatchEventOnThread(final ManagerEvent event, final FilteredManagerListenerWrapper filter,
                                        final CountDownLatch latch) {
-        Runnable runner = () -> {
+        executors.execute(() -> {
             try {
                 final LogTime time = new LogTime();
 
@@ -216,10 +216,7 @@ class CoherentManagerEventQueue implements ManagerEventListener, Runnable {
             } finally {
                 latch.countDown();
             }
-        };
-
-        executors.execute(runner);
-
+        });
     }
 
     /**

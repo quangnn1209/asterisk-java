@@ -1,6 +1,7 @@
 package org.asteriskjava.pbx.internal.managerAPI;
 
 import org.asteriskjava.live.ManagerCommunicationException;
+import org.asteriskjava.live.internal.Constants;
 import org.asteriskjava.lock.Locker.LockCloser;
 import org.asteriskjava.pbx.*;
 import org.asteriskjava.pbx.asterisk.wrap.actions.OriginateAction;
@@ -28,8 +29,6 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
     private volatile String originateID;
 
     volatile private boolean originateSuccess;
-
-    volatile private String originateMessage;
 
     private final Channel monitorChannel1;
 
@@ -157,11 +156,14 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             // Just add us as an asterisk event listener.
             this.startListener();
 
+            // TODO: textback
+            Constants.putCall(myVars.get(Constants.CALL_UUID), this);
             response = pbx.sendAction(originate, localTimeout);
             OriginateBaseClass.logger.debug("Originate.sendAction completed");
             if (response.getResponse().compareToIgnoreCase("Success") != 0) {
+                // Not happening much
                 OriginateBaseClass.logger
-                    .error("Error Originating call " + originate + " : " + response.getMessage());//$NON-NLS-2$
+                    .error(myVars.get(Constants.CALL_UUID) + ": Error Originating call " + originate + " : " + response.getMessage());//$NON-NLS-2$
 //                OriginateFailureHelper.add(myVars.get("Call-UUID"), response.getMessage());
                 throw new ManagerCommunicationException(response.getMessage(), null);
             }
@@ -169,7 +171,8 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             // wait the set timeout +1 second to allow for
             // asterisk to start the originate
             if (!originateLatch.await(localTimeout + 1000, TimeUnit.MILLISECONDS)) {
-                logger.error("Originate Latch timed out");
+                // TODO: textback Mostly this error
+                logger.error(myVars.get(Constants.CALL_UUID) + ": Originate Latch timed out");
 //                OriginateFailureHelper.add(myVars.get("Call-UUID"), "Originate Latch timed out");
             }
         } catch (final InterruptedException e) {
@@ -185,7 +188,8 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             this.result.setChannelData(this.newChannel);
             OriginateBaseClass.logger.info("new channel ok: " + this.newChannel);
         } else {
-            OriginateBaseClass.logger.warn("originate failed to connect endPoint: " + local + " to ext " + target); //$NON-NLS-2$
+            // TODO: FUCKING STUPID SHIT
+            OriginateBaseClass.logger.warn(myVars.get(Constants.CALL_UUID) + ": originate failed to connect endPoint: " + local + " to ext " + target); //$NON-NLS-2$
 //            OriginateFailureHelper.add(myVars.get("Call-UUID"), this.originateMessage);
             if (this.newChannel != null) {
                 try {
@@ -202,9 +206,9 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
     }
 
     void abort(final String reason) {
+        // TODO: textback never happened
         OriginateBaseClass.logger.warn("Aborting originate ");
         this.originateSuccess = false;
-        this.originateMessage = "Aborted";
         this.result.setAbortReason(reason);
         this.hungup = true;
         if (this.newChannel != null) {
@@ -219,7 +223,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
 
             }
         }
-        originateLatch.countDown();
+        latchCountDown();
 
     }
 
@@ -255,16 +259,16 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                 final Channel hangupChannel = hangupEvt.getChannel();
 
                 if (channelId.equals(hangupEvt.getUniqueId())) {
+                    // TODO: textback never happened
                     this.originateSuccess = false;
-                    this.originateMessage = "Dest channel " + this.newChannel + " hungup";
                     OriginateBaseClass.logger.warn("Dest channel " + this.newChannel + " hungup");
-                    originateLatch.countDown();
+                    latchCountDown();
                 }
                 if ((this.monitorChannel1 != null) && (hangupChannel.isSame(this.monitorChannel1))) {
                     this.originateSuccess = false;
-                    this.originateMessage = "Dest channel " + this.newChannel + " hungup";
                     this.hungup = true;
                     if (this.newChannel != null) {
+                        // TODO: textback never happened
                         OriginateBaseClass.logger.warn("hanging up " + this.newChannel);
                         this.result.setChannelHungup(true);
 
@@ -278,13 +282,13 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                         }
                     }
                     OriginateBaseClass.logger.warn("notify channel 1 hungup");
-                    originateLatch.countDown();
+                    latchCountDown();
                 }
                 if ((this.monitorChannel2 != null) && (hangupChannel.isSame(this.monitorChannel2))) {
                     this.originateSuccess = false;
-                    this.originateMessage = "Dest channel " + this.newChannel + " hungup";
                     this.hungup = true;
                     if (this.newChannel != null) {
+                        // TODO: textback never happened
                         OriginateBaseClass.logger.warn("Hanging up channel " + this.newChannel);
                         this.result.setChannelHungup(true);
 
@@ -297,7 +301,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                         }
                     }
                     OriginateBaseClass.logger.warn("Notify channel 2 (" + this.monitorChannel2 + ") hungup");//$NON-NLS-2$
-                    originateLatch.countDown();
+                    latchCountDown();
                 }
 
             }
@@ -312,7 +316,6 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                 if (this.originateID != null) {
                     if (this.originateID.compareToIgnoreCase(response.getActionId()) == 0) {
                         this.originateSuccess = response.isSuccess();
-                        this.originateMessage = response.getResponse();
                         OriginateBaseClass.logger.info("OriginateResponse: matched actionId, success="
                             + this.originateSuccess + " channelSeen=" + this.channelSeen);
 
@@ -333,8 +336,8 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                             // NewChannelEvent doing the
                             // notify.
                             if (this.channelSeen) {
-                                OriginateBaseClass.logger.debug("notify originate response event " + this.originateSuccess);
-                                originateLatch.countDown();
+                                OriginateBaseClass.logger.info("notify originate response event " + this.originateSuccess);
+                                latchCountDown();
                             } else {
                                 logger.error("Originate Response didn't contain the channel");
                             }
@@ -382,7 +385,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
                     String forward = ((DialEndEvent) event).getForward();
                     if (forward != null && forward.length() > 0) {
                         logger.warn("DialEndEvent");
-                        originateLatch.countDown();
+                        latchCountDown();
                     }
                 }
             }
@@ -395,6 +398,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             this.newChannel = channel;
             this.channelSeen = true;
 
+            // TODO: textback never happened
             OriginateBaseClass.logger.info("new channel name " + channel);
             if (this.listener != null) {
                 /*
@@ -406,10 +410,14 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
 
             if (this.originateSeen) {
                 OriginateBaseClass.logger.info("notifying success 362");
-                originateLatch.countDown();
+                latchCountDown();
             }
         }
 
     }
 
+
+    public void latchCountDown() {
+        this.originateLatch.countDown();
+    }
 }

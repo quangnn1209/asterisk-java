@@ -124,7 +124,6 @@ public class SocketConnectionFacadeImpl implements SocketConnectionFacade {
         }
         socket.setSoTimeout(readTimeout);
         socket.connect(new InetSocketAddress(host, port), timeout);
-
         initialize(socket, encoding, lineDelimiter);
         if (System.getProperty(Trace.TRACE_PROPERTY, "false").equalsIgnoreCase("true")) {
             trace = new FileTrace(socket);

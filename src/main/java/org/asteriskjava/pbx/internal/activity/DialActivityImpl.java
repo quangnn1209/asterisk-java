@@ -82,10 +82,9 @@ public class DialActivityImpl extends ActivityHelper<DialActivity> implements Di
             DialActivityImpl.logger.info("***********               " + this._accepting + "             ****************");
             DialActivityImpl.logger.debug("*******************************************************************************");
 
-            final AsteriskSettings profile = PBXFactory.getActiveProfile();
-
+            //TODO: Textback
             final OriginateResult[] resultChannels = nr.dial(this, this._originating, this._accepting,
-                profile.getManagementContext(), this.toCallerID, this.hideToCallerId, channelVarsToSet, dialOptions);
+                this.toCallerID, this.hideToCallerId, channelVarsToSet, dialOptions);
 
             if ((resultChannels[0] == null) || (resultChannels[1] == null)) {
                 // the dial failed

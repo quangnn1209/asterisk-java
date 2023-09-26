@@ -41,7 +41,7 @@ public class Dial extends EventListenerBaseClass {
      * @throws PBXException
      */
     public OriginateResult[] dial(final NewChannelListener listener, final EndPoint localHandset,
-                                  final EndPoint targetEndPoint, final String dialContext, final CallerID callerID, final boolean hideCallerId,
+                                  final EndPoint targetEndPoint, final CallerID callerID, final boolean hideCallerId,
                                   Map<String, String> channelVarsToSet, String dialOptions) throws PBXException {
         final PBX pbx = PBXFactory.getActivePBX();
 
@@ -52,12 +52,12 @@ public class Dial extends EventListenerBaseClass {
             // First bring the operator's handset up and connect it to the
             // 'njr-dial' extension where they can
             // wait whilst we complete the second leg
+            // TODO: textback
             final OriginateResult trcResult = originate.originate(localHandset, pbx.getExtensionAgi(), true,
-                    ((AsteriskPBX) pbx).getManagementContext(), callerID, null, hideCallerId, channelVarsToSet);
+                ((AsteriskPBX) pbx).getManagementContext(), callerID, null, hideCallerId, channelVarsToSet);
 
             this.result[0] = trcResult;
             if (trcResult.isSuccess()) {
-
                 try {
                     if (targetEndPoint instanceof HoldAtAgi) {
                         if (trcResult.getChannel().waitForChannelToReachAgi(30, TimeUnit.SECONDS)) {
@@ -75,7 +75,7 @@ public class Dial extends EventListenerBaseClass {
                         this._latch = new CountDownLatch(1);
 
                         trcResult.getChannel().setCurrentActivityAction(
-                                new AgiChannelActivityDial(targetEndPoint.getFullyQualifiedName(), dialOptions));
+                            new AgiChannelActivityDial(targetEndPoint.getFullyQualifiedName(), dialOptions));
 
                         if (!this._latch.await(30, TimeUnit.SECONDS)) {
                             logger.warn("Timeout waiting for channel. " + trcResult.getChannel());
@@ -113,7 +113,7 @@ public class Dial extends EventListenerBaseClass {
             final BridgeEvent link = (BridgeEvent) event;
 
             if ((link.getChannel1() != null) && (this.result[0] != null)
-                    && link.getChannel1().isSame(this.result[0].getChannel())) {
+                && link.getChannel1().isSame(this.result[0].getChannel())) {
 
                 Dial.logger.debug("Dial out bridged on " + link.getChannel1() + " to " + link.getChannel2()); //$NON-NLS-1$ //$NON-NLS-2$
                 this.result[1] = new OriginateResult();

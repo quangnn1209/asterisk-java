@@ -51,9 +51,9 @@ public class DefaultAgiServer extends AbstractAgiServer implements AgiServer {
     private static final int DEFAULT_BIND_PORT = 4573;
 
     /**
-     * Default 50? Windows server max 200?
+     * Default 50? Windows server max 100000?
      */
-    private static final int BACKLOG = 200;
+    private static final int BACKLOG = 100000;
 
     private ServerSocketFacade serverSocket;
 

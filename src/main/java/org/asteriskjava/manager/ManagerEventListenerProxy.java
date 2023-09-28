@@ -2,6 +2,8 @@ package org.asteriskjava.manager;
 
 import org.asteriskjava.manager.event.ManagerEvent;
 import org.asteriskjava.util.DaemonThreadFactory;
+import org.asteriskjava.util.Log;
+import org.asteriskjava.util.LogFactory;
 
 import java.util.concurrent.*;
 
@@ -29,6 +31,7 @@ import java.util.concurrent.*;
  * @since 0.3
  */
 public class ManagerEventListenerProxy implements ManagerEventListener {
+    protected Log logger = LogFactory.getLog(getClass());
     private final ThreadPoolExecutor executor;
     private final ManagerEventListener target;
 
@@ -41,7 +44,9 @@ public class ManagerEventListenerProxy implements ManagerEventListener {
      * @see Executors#newSingleThreadExecutor(ThreadFactory)
      */
     public ManagerEventListenerProxy(ManagerEventListener target) {
-        executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory());
+        executor = new ThreadPoolExecutor(100, 10000, 500, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<>(), new DaemonThreadFactory());
+
         this.target = target;
         if (target == null) {
             throw new NullPointerException("ManagerEventListener target is null!");
@@ -51,26 +56,15 @@ public class ManagerEventListenerProxy implements ManagerEventListener {
 
     @Override
     public void onManagerEvent(final ManagerEvent event) {
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                target.onManagerEvent(event);
-            }
-        });
+        executor.execute(() -> target.onManagerEvent(event));
+        int queueSize = executor.getQueue().size();
+        if (queueSize > 10) {
+            logger.info(executor.getQueue().size() + " threads in queue");
+        }
     }//onManagerEvent
 
 
     public void shutdown() {
         executor.shutdown();
     }
-
-    public static class Access {
-        private Access() {
-
-        }
-
-        public static int getThreadQueueSize(ManagerEventListenerProxy proxy) {
-            return proxy.executor.getQueue().size();
-        }
-    }//Access
 }

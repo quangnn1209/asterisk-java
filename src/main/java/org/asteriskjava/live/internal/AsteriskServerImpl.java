@@ -199,7 +199,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             initializing = true;
 
             if (eventConnection.getState() == ManagerConnectionState.INITIAL
-                    || eventConnection.getState() == ManagerConnectionState.DISCONNECTED) {
+                || eventConnection.getState() == ManagerConnectionState.DISCONNECTED) {
                 try {
                     eventConnection.login();
                 } catch (Exception e) {
@@ -230,7 +230,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
     /* Implementation of the AsteriskServer interface */
 
     public AsteriskChannel originateToExtension(String channel, String context, String exten, int priority, long timeout)
-            throws ManagerCommunicationException, NoSuchChannelException {
+        throws ManagerCommunicationException, NoSuchChannelException {
         return originateToExtension(channel, context, exten, priority, timeout, null, null);
     }
 
@@ -253,7 +253,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
     }
 
     public AsteriskChannel originateToApplication(String channel, String application, String data, long timeout)
-            throws ManagerCommunicationException, NoSuchChannelException {
+        throws ManagerCommunicationException, NoSuchChannelException {
         return originateToApplication(channel, application, data, timeout, null, null);
     }
 
@@ -275,7 +275,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
     }
 
     public AsteriskChannel originate(OriginateAction originateAction)
-            throws ManagerCommunicationException, NoSuchChannelException {
+        throws ManagerCommunicationException, NoSuchChannelException {
         final ResponseEvents responseEvents;
         final Iterator<ResponseEvent> responseEventIterator;
         String uniqueId;
@@ -569,7 +569,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
         }
         if (!(response instanceof CommandResponse)) {
             logger.error("Response to CommandAction(\"" + SHOW_VOICEMAIL_USERS_COMMAND + "\") was not a CommandResponse but "
-                    + response);
+                + response);
             return voicemailboxes;
         }
 
@@ -628,7 +628,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
         response = sendAction(new CommandAction(command));
         if (!(response instanceof CommandResponse)) {
             throw new ManagerCommunicationException(
-                    "Response to CommandAction(\"" + command + "\") was not a CommandResponse but " + response, null);
+                "Response to CommandAction(\"" + command + "\") was not a CommandResponse but " + response, null);
         }
 
         return ((CommandResponse) response).getResult();
@@ -672,7 +672,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
         response = sendAction(new GetConfigAction(filename));
         if (!(response instanceof GetConfigResponse)) {
             throw new ManagerCommunicationException(
-                    "Response to GetConfigAction(\"" + filename + "\") was not a CommandResponse but " + response, null);
+                "Response to GetConfigAction(\"" + filename + "\") was not a CommandResponse but " + response, null);
         }
 
         getConfigResponse = (GetConfigResponse) response;
@@ -804,6 +804,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
      * delegated to the dispatchEvent method.
      */
     public void onManagerEvent(ManagerEvent event) {
+        long start = System.currentTimeMillis();
         // Handle Channel related events
         if (event instanceof ConnectEvent) {
             handleConnectEvent((ConnectEvent) event);
@@ -835,6 +836,10 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             channelManager.handleMonitorStartEvent((MonitorStartEvent) event);
         } else if (event instanceof MonitorStopEvent) {
             channelManager.handleMonitorStopEvent((MonitorStopEvent) event);
+        } else if (event instanceof RtcpSentEvent) {
+            logger.info(event);
+        } else if (event instanceof RtcpReceivedEvent) {
+            logger.info(event);
         }
         // End of channel related events
         // Handle parking related event
@@ -895,8 +900,12 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
         }
         // End of agent-related events
 
+        long executeTime = System.currentTimeMillis() - start;
+        if (executeTime > 500) {
+            logger.info(event + " " + (System.currentTimeMillis() - start) + "ms");
+        }
         // dispatch the events to the chainListener if they exist.
-        fireChainListeners(event);
+//        fireChainListeners(event);
     }
 
     /**
@@ -906,8 +915,10 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
      */
     private void fireChainListeners(ManagerEvent event) {
         try (LockCloser closer = this.chainListeners.withLock()) {
-            for (ManagerEventListener listener : this.chainListeners)
+            for (ManagerEventListener listener : this.chainListeners) {
+                logger.info("fireChainListeners " + listener);
                 listener.onManagerEvent(event);
+            }
         }
     }
 
@@ -989,7 +1000,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
                 final LiveException cause;
 
                 cause = new NoSuchChannelException(
-                        "Channel '" + callbackData.getOriginateAction().getChannel() + "' is not available");
+                    "Channel '" + callbackData.getOriginateAction().getChannel() + "' is not available");
                 cb.onFailure(cause);
                 return;
             }
@@ -1043,7 +1054,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
     @Override
     public void shutdown() {
         if (eventConnection != null && (eventConnection.getState() == ManagerConnectionState.CONNECTED
-                || eventConnection.getState() == ManagerConnectionState.RECONNECTING)) {
+            || eventConnection.getState() == ManagerConnectionState.RECONNECTING)) {
             try {
                 eventConnection.logoff();
             } catch (Exception ignore) {

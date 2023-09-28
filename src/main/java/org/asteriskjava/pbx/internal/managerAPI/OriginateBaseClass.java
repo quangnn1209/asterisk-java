@@ -14,7 +14,6 @@ import org.asteriskjava.util.LogFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -108,7 +107,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
         final OriginateAction originate = new OriginateAction();
         this.originateID = originate.getActionId();
 
-        channelId = (System.currentTimeMillis() / 1000) + ".AJ" + originateSeed.incrementAndGet();
+        channelId = myVars.get(Constants.CALL_UUID); //(System.currentTimeMillis() / 1000) + ".AJ" + originateSeed.incrementAndGet();
         originate.setChannelId(channelId);
 
         Integer localTimeout = timeout;
@@ -157,26 +156,24 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             this.startListener();
 
             // TODO: textback
-            Constants.putCall(myVars.get(Constants.CALL_UUID), this);
             response = pbx.sendAction(originate, localTimeout);
             OriginateBaseClass.logger.debug("Originate.sendAction completed");
             if (response.getResponse().compareToIgnoreCase("Success") != 0) {
                 // Not happening much
-                OriginateBaseClass.logger
-                    .error(myVars.get(Constants.CALL_UUID) + ": Error Originating call " + originate + " : " + response.getMessage());//$NON-NLS-2$
+                OriginateBaseClass.logger.error(channelId + ": Error Originating call " + originate + " : " + response.getMessage());//$NON-NLS-2$
 //                OriginateFailureHelper.add(myVars.get("Call-UUID"), response.getMessage());
                 throw new ManagerCommunicationException(response.getMessage(), null);
             }
 
             // wait the set timeout +1 second to allow for
             // asterisk to start the originate
-            if (!originateLatch.await(localTimeout + 1000, TimeUnit.MILLISECONDS)) {
+//            if (!originateLatch.await(localTimeout + 1000, TimeUnit.MILLISECONDS)) {
                 // TODO: textback Mostly this error
-                logger.error(myVars.get(Constants.CALL_UUID) + ": Originate Latch timed out");
+//                logger.error(channelId + ": Originate Latch timed out");
 //                OriginateFailureHelper.add(myVars.get("Call-UUID"), "Originate Latch timed out");
-            }
-        } catch (final InterruptedException e) {
-            OriginateBaseClass.logger.debug(e, e);
+//            }
+//        } catch (final InterruptedException e) {
+//            OriginateBaseClass.logger.debug(e, e);
         } catch (final Exception e) {
             OriginateBaseClass.logger.error(e, e);
         } finally {
@@ -189,17 +186,17 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             OriginateBaseClass.logger.info("new channel ok: " + this.newChannel);
         } else {
             // TODO: FUCKING STUPID SHIT
-            OriginateBaseClass.logger.warn(myVars.get(Constants.CALL_UUID) + ": originate failed to connect endPoint: " + local + " to ext " + target); //$NON-NLS-2$
+//            OriginateBaseClass.logger.warn(channelId + ": originate failed to connect endPoint: " + local + " to ext " + target); //$NON-NLS-2$
 //            OriginateFailureHelper.add(myVars.get("Call-UUID"), this.originateMessage);
-            if (this.newChannel != null) {
-                try {
-                    logger.debug("Hanging up");
-                    pbx.hangup(this.newChannel);
-                } catch (IllegalArgumentException | IllegalStateException | PBXException e) {
-                    logger.error(e, e);
-
-                }
-            }
+//            if (this.newChannel != null) {
+//                try {
+//                    logger.debug("Hanging up");
+//                    pbx.hangup(this.newChannel);
+//                } catch (IllegalArgumentException | IllegalStateException | PBXException e) {
+//                    logger.error(e, e);
+//
+//                }
+//            }
         }
 
         return this.result;

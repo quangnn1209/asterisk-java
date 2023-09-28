@@ -22,15 +22,12 @@ import org.asteriskjava.lock.Locker.LockCloser;
 import org.asteriskjava.manager.ResponseEvents;
 import org.asteriskjava.manager.action.StatusAction;
 import org.asteriskjava.manager.event.*;
-import org.asteriskjava.pbx.internal.managerAPI.OriginateBaseClass;
-import org.asteriskjava.util.DaemonThreadFactory;
 import org.asteriskjava.util.DateUtil;
 import org.asteriskjava.util.Log;
 import org.asteriskjava.util.LogFactory;
 
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,7 +53,7 @@ class ChannelManager {
      */
     final LockableMap<String, AsteriskChannelImpl> channels = new LockableMap<>(new LinkedHashMap<>());
 
-    ScheduledThreadPoolExecutor traceScheduledExecutorService;
+//    ScheduledThreadPoolExecutor traceScheduledExecutorService;
 
     /**
      * Creates a new instance.
@@ -76,7 +73,7 @@ class ChannelManager {
 
         shutdown();
 
-        traceScheduledExecutorService = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory());// Executors.newSingleThreadScheduledExecutor
+//        traceScheduledExecutorService = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory());// Executors.newSingleThreadScheduledExecutor
 
         StatusAction sa = new StatusAction();
         sa.setVariables(variables);
@@ -96,9 +93,9 @@ class ChannelManager {
     }
 
     private void shutdown() {
-        if (traceScheduledExecutorService != null) {
-            traceScheduledExecutorService.shutdown();
-        }
+//        if (traceScheduledExecutorService != null) {
+//            traceScheduledExecutorService.shutdown();
+//        }
         try (LockCloser closer = channels.withLock()) {
             channels.clear();
         }
@@ -154,47 +151,19 @@ class ChannelManager {
 
     private AsteriskChannelImpl addNewChannel(String uniqueId, final String name, Date dateOfCreation, String callerIdNumber,
                                               String callerIdName, ChannelState state, String account) {
+        AsteriskChannelImpl existingChannel = getChannelImplById(uniqueId);
+
+        if (existingChannel != null) {
+            return existingChannel;
+        }
+
         final AsteriskChannelImpl channel = new AsteriskChannelImpl(server, name, uniqueId, dateOfCreation);
         channel.setCallerId(new CallerId(callerIdName, callerIdNumber));
         channel.setAccount(account);
         channel.stateChanged(dateOfCreation, state);
-        logger.info("Adding channel " + channel.getName() + "(" + channel.getId() + ")");
-
-        String traceId = getTraceId(channel);
-        channel.setTraceId(traceId);
         addChannel(channel);
 
-        String callUUID = getCallUUID(channel);
-        if (callUUID != null) {
-            OriginateBaseClass originateBaseClass = Constants.getCall(callUUID);
-            if (originateBaseClass != null) {
-                originateBaseClass.latchCountDown();
-            }
-        }
-
-        // todo getChannelImplById -> LinkedHashMap, callbacks order
-        traceScheduledExecutorService.schedule(() -> {
-            String traceId1 = traceId;
-            if (traceId1 == null) { // retry
-                traceId1 = getTraceId(channel);
-                channel.setTraceId(traceId1);
-            }
-            logger.info(callUUID + ": addNewChannel " + traceId1 + " " + name);
-            if (traceId1 != null && (!name.toLowerCase(Locale.ENGLISH).startsWith("local/") || name.endsWith(",1")
-                || name.endsWith(";1"))) {
-                final OriginateCallbackData callbackData = server.getOriginateCallbackDataByTraceId(traceId1);
-
-                if (callbackData != null && callbackData.getChannel() == null) {
-                    callbackData.setChannel(channel);
-                    try {
-                        callbackData.getCallback().onDialing(channel);
-                    } catch (Throwable t) {
-                        logger.warn("Exception dispatching originate progress. " + channel, t);
-                    } // t
-                } // i
-            } // i
-        }, SLEEP_TIME_BEFORE_GET_VAR_MS, TimeUnit.MILLISECONDS);
-
+        logger.info(uniqueId + ": Adding channel " + channel.getName() + "(" + channel.getId() + ")");
         server.fireNewAsteriskChannel(channel);
         return channel;
     }// addNewChannel
@@ -647,14 +616,6 @@ class ChannelManager {
         // logger.info("TraceId for channel " + channel.getName() + " is " +
         // traceId);
         return traceId;
-    }
-
-    private String getCallUUID(AsteriskChannel channel) {
-        try {
-            return channel.getVariable(Constants.CALL_UUID);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     void handleParkedCallEvent(ParkedCallEvent event) {

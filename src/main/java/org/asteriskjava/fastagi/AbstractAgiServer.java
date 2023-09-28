@@ -26,7 +26,7 @@ public abstract class AbstractAgiServer {
     /**
      * The default thread pool size.
      */
-    private static final int DEFAULT_MAXIMUM_POOL_SIZE = 500;
+    private static final int DEFAULT_MAXIMUM_POOL_SIZE = 1000;
 
     /**
      * The minimum number of worker threads in the thread pool.
@@ -148,7 +148,7 @@ public abstract class AbstractAgiServer {
 
         if (maximumPoolSize < poolSize) {
             throw new IllegalArgumentException(
-                    "New maximumPoolSize (" + maximumPoolSize + ") is less than current pool size (" + poolSize + ")");
+                "New maximumPoolSize (" + maximumPoolSize + ") is less than current pool size (" + poolSize + ")");
         }
 
         if (pool != null) {
@@ -218,6 +218,10 @@ public abstract class AbstractAgiServer {
             logger.info("Thread pool started.");
         }
 
+        int queueSize = pool.getQueue().size();
+        if (queueSize > 10) {
+            logger.info(queueSize + " threads in queue");
+        }
         return pool;
     }
 
@@ -261,7 +265,7 @@ public abstract class AbstractAgiServer {
      * @see #setMaximumPoolSize(int)
      */
     protected ThreadPoolExecutor createPool() {
-        return new ThreadPoolExecutor(poolSize, (maximumPoolSize < poolSize) ? poolSize : maximumPoolSize, 50000L,
-                TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>(), new DaemonThreadFactory());
+        return new ThreadPoolExecutor(poolSize, Math.max(poolSize, maximumPoolSize), 50000L,
+            TimeUnit.MILLISECONDS, new SynchronousQueue<>(), new DaemonThreadFactory());
     }
 }

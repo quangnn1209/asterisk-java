@@ -78,9 +78,9 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
      * it will may have been updated (renames, masquerades) when the realtime
      * listener processes its event.
      */
-    private CoherentManagerEventQueue eventQueue;
-
-    private CoherentManagerEventQueue realtimeEventQueue;
+//    private CoherentManagerEventQueue eventQueue;
+//
+//    private CoherentManagerEventQueue realtimeEventQueue;
 
     // private List<FilteredManagerListener<ManagerEvent>> realtimeListeners =
     // new CopyOnWriteArrayList<>();
@@ -338,21 +338,21 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
         // that it hasn't already)
         // and should have no duplicate events. Once drained the queue will be
         // garbage collected.
-        CoherentManagerEventQueue newRealtime = new CoherentManagerEventQueue("Realtime",
-                CoherentManagerConnection.managerConnection);
-        if (this.realtimeEventQueue != null) {
-            this.realtimeEventQueue.stop();
-            newRealtime.transferListeners(this.realtimeEventQueue);
-        }
-        this.realtimeEventQueue = newRealtime;
+//        CoherentManagerEventQueue newRealtime = new CoherentManagerEventQueue("Realtime",
+//                CoherentManagerConnection.managerConnection);
+//        if (this.realtimeEventQueue != null) {
+//            this.realtimeEventQueue.stop();
+//            newRealtime.transferListeners(this.realtimeEventQueue);
+//        }
+//        this.realtimeEventQueue = newRealtime;
 
-        CoherentManagerEventQueue newStandard = new CoherentManagerEventQueue("Standard",
-                CoherentManagerConnection.managerConnection);
-        if (this.eventQueue != null) {
-            this.eventQueue.stop();
-            newStandard.transferListeners(this.eventQueue);
-        }
-        this.eventQueue = newStandard;
+//        CoherentManagerEventQueue newStandard = new CoherentManagerEventQueue("Standard",
+//                CoherentManagerConnection.managerConnection);
+//        if (this.eventQueue != null) {
+//            this.eventQueue.stop();
+//            newStandard.transferListeners(this.eventQueue);
+//        }
+//        this.eventQueue = newStandard;
     }
 
     private void checkFeatures() throws IOException, TimeoutException {
@@ -384,8 +384,8 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
     }
 
     public void shutDown() {
-        CoherentManagerConnection.managerConnection.removeEventListener(this.eventQueue);
-        this.eventQueue.stop();
+//        CoherentManagerConnection.managerConnection.removeEventListener(this.eventQueue);
+//        this.eventQueue.stop();
         try {
             CoherentManagerConnection.managerConnection.logoff();
         } catch (final Exception e) {
@@ -403,18 +403,18 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
     }
 
     public void removeListener(FilteredManagerListener<ManagerEvent> listener) {
-        if (listener.getPriority() == ListenerPriority.REALTIME)
-            this.realtimeEventQueue.removeListener(listener);
-        else
-            this.eventQueue.removeListener(listener);
+//        if (listener.getPriority() == ListenerPriority.REALTIME)
+//            this.realtimeEventQueue.removeListener(listener);
+//        else
+//            this.eventQueue.removeListener(listener);
 
     }
 
     public void addListener(FilteredManagerListener<ManagerEvent> listener) {
-        if (listener.getPriority() == ListenerPriority.REALTIME)
-            this.realtimeEventQueue.addListener(listener);
-        else
-            this.eventQueue.addListener(listener);
+//        if (listener.getPriority() == ListenerPriority.REALTIME)
+//            this.realtimeEventQueue.addListener(listener);
+//        else
+//            this.eventQueue.addListener(listener);
 
     }
 

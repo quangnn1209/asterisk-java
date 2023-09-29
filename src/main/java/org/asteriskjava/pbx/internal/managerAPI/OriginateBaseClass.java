@@ -98,7 +98,7 @@ public abstract class OriginateBaseClass extends EventListenerBaseClass {
             return null;
         }
 
-        OriginateBaseClass.logger.info("originate connection endPoint " + local + " to endPoint " + target //$NON-NLS-2$
+        OriginateBaseClass.logger.debug("originate connection endPoint " + local + " to endPoint " + target //$NON-NLS-2$
             + " vars " + myVars);
         ManagerResponse response = null;
 

@@ -21,7 +21,6 @@ import org.asteriskjava.config.ConfigFile;
 import org.asteriskjava.live.*;
 import org.asteriskjava.lock.Lockable;
 import org.asteriskjava.lock.LockableList;
-import org.asteriskjava.lock.LockableMap;
 import org.asteriskjava.lock.LockableSet;
 import org.asteriskjava.lock.Locker.LockCloser;
 import org.asteriskjava.manager.*;
@@ -34,6 +33,8 @@ import org.asteriskjava.util.Log;
 import org.asteriskjava.util.LogFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -89,12 +90,12 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
      * <p/>
      * Contains <code>null</code> until lazily initialized.
      */
-    private LockableMap<String, String> versions;
+    private ConcurrentMap<String, String> versions;
 
     /**
      * Maps the traceId to the corresponding callback data.
      */
-    private final LockableMap<String, OriginateCallbackData> originateCallbacks;
+    private final ConcurrentMap<String, OriginateCallbackData> originateCallbacks;
 
     private final AtomicLong idCounter;
 
@@ -132,7 +133,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
     public AsteriskServerImpl() {
         idCounter = new AtomicLong();
         listeners = new LockableSet<>(new LinkedHashSet<>());
-        originateCallbacks = new LockableMap<>(new HashMap<>());
+        originateCallbacks = new ConcurrentHashMap<>();
         channelManager = new ChannelManager(this);
         agentManager = new AgentManager(this);
         meetMeManager = new MeetMeManager(this, channelManager);
@@ -378,9 +379,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
 
             callbackData = new OriginateCallbackData(originateAction, DateUtil.getDate(), cb);
             // register callback
-            try (LockCloser closer = originateCallbacks.withLock()) {
-                originateCallbacks.put(traceId, callbackData);
-            }
+            originateCallbacks.put(traceId, callbackData);
         }
 
         initializeIfNeeded();
@@ -466,10 +465,9 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
 
         initializeIfNeeded();
         if (versions == null) {
-            LockableMap<String, String> map;
             ManagerResponse response;
 
-            map = new LockableMap<>(new HashMap<>());
+            ConcurrentMap<String, String> map = new ConcurrentHashMap<>();
             try {
                 final String command;
 
@@ -506,9 +504,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
                 logger.warn("Unable to send '" + SHOW_VERSION_FILES_COMMAND + "' command.", e);
             }
         } else {
-            try (LockCloser closer = versions.withLock()) {
-                fileVersion = versions.get(file);
-            }
+            fileVersion = versions.get(file);
         }
 
         if (fileVersion == null) {
@@ -790,12 +786,6 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
         }
     }
 
-    OriginateCallbackData getOriginateCallbackDataByTraceId(String traceId) {
-        try (LockCloser closer = originateCallbacks.withLock()) {
-            return originateCallbacks.get(traceId);
-        }
-    }
-
     /* Implementation of the ManagerEventListener interface */
 
     /**
@@ -813,7 +803,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
         } else if (event instanceof NewChannelEvent) {
             channelManager.handleNewChannelEvent((NewChannelEvent) event);
         } else if (event instanceof NewExtenEvent) {
-            channelManager.handleNewExtenEvent((NewExtenEvent) event);
+//            channelManager.handleNewExtenEvent((NewExtenEvent) event);
         } else if (event instanceof NewStateEvent) {
             channelManager.handleNewStateEvent((NewStateEvent) event);
         } else if (event instanceof NewCallerIdEvent) {
@@ -836,6 +826,8 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             channelManager.handleMonitorStartEvent((MonitorStartEvent) event);
         } else if (event instanceof MonitorStopEvent) {
             channelManager.handleMonitorStopEvent((MonitorStopEvent) event);
+        } else if (event instanceof MixMonitorStopEvent) {
+            logger.info(event);
         } else if (event instanceof RtcpSentEvent) {
             logger.info(event);
         } else if (event instanceof RtcpReceivedEvent) {
@@ -980,13 +972,11 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             return;
         }
 
-        try (LockCloser closer = originateCallbacks.withLock()) {
-            callbackData = originateCallbacks.get(traceId);
-            if (callbackData == null) {
-                return;
-            }
-            originateCallbacks.remove(traceId);
+        callbackData = originateCallbacks.get(traceId);
+        if (callbackData == null) {
+            return;
         }
+        originateCallbacks.remove(traceId);
 
         cb = callbackData.getCallback();
         if (!AstUtil.isNull(originateEvent.getUniqueId())) {

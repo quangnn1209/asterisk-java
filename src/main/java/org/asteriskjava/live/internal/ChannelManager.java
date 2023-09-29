@@ -17,7 +17,6 @@
 package org.asteriskjava.live.internal;
 
 import org.asteriskjava.live.*;
-import org.asteriskjava.lock.LockableMap;
 import org.asteriskjava.lock.Locker.LockCloser;
 import org.asteriskjava.manager.ResponseEvents;
 import org.asteriskjava.manager.action.StatusAction;
@@ -28,6 +27,8 @@ import org.asteriskjava.util.LogFactory;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -49,9 +50,9 @@ class ChannelManager {
     private final AsteriskServerImpl server;
 
     /**
-     * A map of all active channel by their unique id. TODO: STUPID SHIT, WHAT IS SIZE?
+     * A map of all active channel by their unique id.
      */
-    final LockableMap<String, AsteriskChannelImpl> channels = new LockableMap<>(new LinkedHashMap<>());
+    private final ConcurrentMap<String, AsteriskChannelImpl> channels = new ConcurrentHashMap<>();
 
 //    ScheduledThreadPoolExecutor traceScheduledExecutorService;
 
@@ -96,10 +97,7 @@ class ChannelManager {
 //        if (traceScheduledExecutorService != null) {
 //            traceScheduledExecutorService.shutdown();
 //        }
-        try (LockCloser closer = channels.withLock()) {
-            channels.clear();
-        }
-
+        channels.clear();
     }
 
     /**
@@ -110,21 +108,17 @@ class ChannelManager {
     Collection<AsteriskChannel> getChannels() {
         Collection<AsteriskChannel> copy;
 
-        try (LockCloser closer = channels.withLock()) {
-            copy = new ArrayList<>(channels.size() + 2);
-            for (AsteriskChannel channel : channels.values()) {
-                if (channel.getState() != ChannelState.HUNGUP) {
-                    copy.add(channel);
-                }
+        copy = new ArrayList<>(channels.size() + 2);
+        for (AsteriskChannel channel : channels.values()) {
+            if (channel.getState() != ChannelState.HUNGUP) {
+                copy.add(channel);
             }
         }
         return copy;
     }
 
     private void addChannel(AsteriskChannelImpl channel) {
-        try (LockCloser closer = channels.withLock()) {
-            channels.put(channel.getId(), channel);
-        }
+        channels.put(channel.getId(), channel);
     }
 
     /**
@@ -134,16 +128,14 @@ class ChannelManager {
     private void removeOldChannels() {
         Iterator<AsteriskChannelImpl> i;
 
-        try (LockCloser closer = channels.withLock()) {
-            i = channels.values().iterator();
-            while (i.hasNext()) {
-                final AsteriskChannel channel = i.next();
-                final Date dateOfRemoval = channel.getDateOfRemoval();
-                if (channel.getState() == ChannelState.HUNGUP && dateOfRemoval != null) {
-                    final long diff = DateUtil.getDate().getTime() - dateOfRemoval.getTime();
-                    if (diff >= REMOVAL_THRESHOLD) {
-                        i.remove();
-                    }
+        i = channels.values().iterator();
+        while (i.hasNext()) {
+            final AsteriskChannel channel = i.next();
+            final Date dateOfRemoval = channel.getDateOfRemoval();
+            if (channel.getState() == ChannelState.HUNGUP && dateOfRemoval != null) {
+                final long diff = DateUtil.getDate().getTime() - dateOfRemoval.getTime();
+                if (diff >= REMOVAL_THRESHOLD) {
+                    i.remove();
                 }
             }
         }
@@ -242,16 +234,14 @@ class ChannelManager {
             return null;
         }
 
-        try (LockCloser closer = channels.withLock()) {
-            for (AsteriskChannelImpl tmp : channels.values()) {
-                if (name.equals(tmp.getName())) {
-                    // return the most recent channel or when dates are similar,
-                    // the active one
-                    if (dateOfCreation == null || tmp.getDateOfCreation().after(dateOfCreation)
-                        || (tmp.getDateOfCreation().equals(dateOfCreation) && tmp.getState() != ChannelState.HUNGUP)) {
-                        channel = tmp;
-                        dateOfCreation = channel.getDateOfCreation();
-                    }
+        for (AsteriskChannelImpl tmp : channels.values()) {
+            if (name.equals(tmp.getName())) {
+                // return the most recent channel or when dates are similar,
+                // the active one
+                if (dateOfCreation == null || tmp.getDateOfCreation().after(dateOfCreation)
+                    || (tmp.getDateOfCreation().equals(dateOfCreation) && tmp.getState() != ChannelState.HUNGUP)) {
+                    channel = tmp;
+                    dateOfCreation = channel.getDateOfCreation();
                 }
             }
         }
@@ -273,21 +263,16 @@ class ChannelManager {
         // Channel name is unique at any give moment in the * server
         // But asterisk-java keeps Hungup channels for a while.
         // We don't want to retrieve hungup channels.
-
-        AsteriskChannelImpl channel = null;
-
         if (name == null) {
             return null;
         }
 
-        try (LockCloser closer = channels.withLock()) {
-            for (AsteriskChannelImpl tmp : channels.values()) {
-                if (name.equals(tmp.getName()) && tmp.getState() != ChannelState.HUNGUP) {
-                    channel = tmp;
-                }
+        for (AsteriskChannelImpl tmp : channels.values()) {
+            if (name.equals(tmp.getName()) && tmp.getState() != ChannelState.HUNGUP) {
+                return tmp;
             }
         }
-        return channel;
+        return null;
     }
 
     AsteriskChannelImpl getChannelImplById(String uniqueId) {
@@ -295,9 +280,7 @@ class ChannelManager {
             return null;
         }
 
-        try (LockCloser closer = channels.withLock()) {
-            return channels.get(uniqueId);
-        }
+        return channels.get(uniqueId);
     }// getChannelImplById
 
     /**
@@ -384,11 +367,9 @@ class ChannelManager {
             }
 
             logger.info("Changing unique_id for '" + channel.getName() + "' from " + oldId + " to " + newId + " < " + event);
-            try (LockCloser closer = channels.withLock()) {
-                channels.remove(oldId);
-                channels.put(newId, channel);
-                channel.idChanged(event.getDateReceived(), newId);
-            }
+            channels.remove(oldId);
+            channels.put(newId, channel);
+            channel.idChanged(event.getDateReceived(), newId);
         }
     }// idChanged
 
@@ -425,17 +406,22 @@ class ChannelManager {
                 cidname = currentCallerId.getName();
             }
 
-            if (event.getCallerIdNum() != null) {
+            boolean shouldUpdate = false;
+            if (event.getCallerIdNum() != null && !Objects.equals(event.getCallerIdNum(), cidnum)) {
                 cidnum = event.getCallerIdNum();
+                shouldUpdate = true;
             }
 
-            if (event.getCallerIdName() != null) {
+            if (event.getCallerIdName() != null && !Objects.equals(event.getCallerIdName(), cidname)) {
                 cidname = event.getCallerIdName();
+                shouldUpdate = true;
             }
 
-            CallerId newCallerId = new CallerId(cidname, cidnum);
-            logger.debug("Updating CallerId (following NewStateEvent) to: " + newCallerId.toString());
-            channel.setCallerId(newCallerId);
+            if (shouldUpdate) {
+                CallerId newCallerId = new CallerId(cidname, cidnum);
+                logger.debug("Updating CallerId (following NewStateEvent) to: " + newCallerId);
+                channel.setCallerId(newCallerId);
+            }
 
             // Also, NewStateEvent can return a new channel name for the same
             // channel uniqueid, indicating the channel has been
@@ -497,7 +483,6 @@ class ChannelManager {
         }
 
         logger.info("Removing channel " + channel.getName() + " due to hangup (" + cause + ")");
-        removeOldChannels();
     }
 
     void handleDialEvent(DialEvent event) {
@@ -599,6 +584,8 @@ class ChannelManager {
         try (LockCloser closer = channel.withLock()) {
             channel.callDetailRecordReceived(event.getDateReceived(), cdr);
         }
+
+        removeOldChannels();
     }
 
     private String getTraceId(AsteriskChannel channel) {

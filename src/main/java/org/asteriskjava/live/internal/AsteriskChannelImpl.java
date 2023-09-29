@@ -18,14 +18,17 @@ package org.asteriskjava.live.internal;
 
 import org.asteriskjava.live.*;
 import org.asteriskjava.lock.LockableList;
-import org.asteriskjava.lock.LockableMap;
 import org.asteriskjava.lock.Locker.LockCloser;
 import org.asteriskjava.manager.action.*;
 import org.asteriskjava.manager.response.ManagerError;
 import org.asteriskjava.manager.response.ManagerResponse;
+import org.asteriskjava.util.Log;
+import org.asteriskjava.util.LogFactory;
 import org.asteriskjava.util.MixMonitorDirection;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Default implementation of the AsteriskChannel interface.
@@ -34,6 +37,7 @@ import java.util.*;
  * @version $Id$
  */
 class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel {
+    private final Log logger = LogFactory.getLog(getClass());
     private static final String CAUSE_VARIABLE_NAME = "PRI_CAUSE";
     /**
      * Date this channel has been created.
@@ -50,7 +54,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
      * contains the channel this channel is bridged with.
      */
     private final LockableList<AsteriskChannel> linkedChannels;
-    private final LockableMap<String, String> variables;
+    private final ConcurrentMap<String, String> variables;
     /**
      * Unique id of this channel.
      */
@@ -130,7 +134,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
      * @throws IllegalArgumentException if any of the parameters are null.
      */
     AsteriskChannelImpl(final AsteriskServerImpl server, final String name, final String id, final Date dateOfCreation)
-            throws IllegalArgumentException {
+        throws IllegalArgumentException {
         super(server);
 
         if (server == null) {
@@ -144,7 +148,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
         }
         if (dateOfCreation == null) {
             throw new IllegalArgumentException(
-                    "Parameter 'dateOfCreation' passed to AsteriskChannelImpl() must not be null.");
+                "Parameter 'dateOfCreation' passed to AsteriskChannelImpl() must not be null.");
         }
 
         this.name = name;
@@ -154,7 +158,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
         this.stateHistory = new LockableList<>(new ArrayList<>());
         this.linkedChannelHistory = new LockableList<>(new ArrayList<>());
         this.dialedChannelHistory = new LockableList<>(new ArrayList<>());
-        this.variables = new LockableMap<>(new HashMap<>());
+        this.variables = new ConcurrentHashMap<>();
         this.dialedChannels = new LockableList<>(new ArrayList<>());
         this.dialingChannels = new LockableList<>(new ArrayList<>());
         this.linkedChannels = new LockableList<>(new ArrayList<>());
@@ -207,7 +211,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
         }
 
         this.name = name;
-        firePropertyChange(PROPERTY_NAME, oldName, name);
+//        firePropertyChange(PROPERTY_NAME, oldName, name);
     }
 
     public CallerId getCallerId() {
@@ -220,10 +224,10 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
      * @param callerId the caller id of this channel.
      */
     void setCallerId(final CallerId callerId) {
-        final CallerId oldCallerId = this.callerId;
+//        final CallerId oldCallerId = this.callerId;
 
         this.callerId = callerId;
-        firePropertyChange(PROPERTY_CALLER_ID, oldCallerId, callerId);
+//        firePropertyChange(PROPERTY_CALLER_ID, oldCallerId, callerId);
     }
 
     public ChannelState getState() {
@@ -244,7 +248,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
 
     public boolean wasBusy() {
         return wasInState(ChannelState.BUSY) || hangupCause == HangupCause.AST_CAUSE_BUSY
-                || hangupCause == HangupCause.AST_CAUSE_USER_BUSY;
+            || hangupCause == HangupCause.AST_CAUSE_USER_BUSY;
     }
 
     /**
@@ -254,6 +258,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
      * @param state the new state of this channel.
      */
     void stateChanged(Date date, ChannelState state) {
+        long start = System.currentTimeMillis();
         try (LockCloser closer = this.withLock()) {
             final ChannelStateHistoryEntry historyEntry;
             final ChannelState oldState = this.state;
@@ -272,6 +277,10 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
 
             this.state = state;
             firePropertyChange(PROPERTY_STATE, oldState, state);
+        }
+        long exeTime = System.currentTimeMillis() - start;
+        if (exeTime > 1000) {
+            logger.info(exeTime + "ms");
         }
     }
 
@@ -608,7 +617,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     }
 
     public void redirect(String context, String exten, int priority)
-            throws ManagerCommunicationException, NoSuchChannelException {
+        throws ManagerCommunicationException, NoSuchChannelException {
         ManagerResponse response;
 
         response = server.sendAction(new RedirectAction(name, context, exten, priority));
@@ -618,7 +627,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     }
 
     public void redirectBothLegs(String context, String exten, int priority)
-            throws ManagerCommunicationException, NoSuchChannelException {
+        throws ManagerCommunicationException, NoSuchChannelException {
         ManagerResponse response;
 
         try (LockCloser closer = linkedChannels.withLock()) {
@@ -626,7 +635,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
                 response = server.sendAction(new RedirectAction(name, context, exten, priority));
             } else {
                 response = server.sendAction(new RedirectAction(name, linkedChannels.get(0).getName(), context, exten,
-                        priority, context, exten, priority));
+                    priority, context, exten, priority));
             }
         }
 
@@ -639,24 +648,22 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
         ManagerResponse response;
         String value;
 
-        try (LockCloser closer = variables.withLock()) {
 
-            value = variables.get(variable);
-            if (value != null) {
-                return value;
-            }
-
-            response = server.sendAction(new GetVarAction(name, variable));
-            if (response instanceof ManagerError) {
-                throw new NoSuchChannelException("Channel '" + name + "' is not available: " + response.getMessage());
-            }
-            value = response.getAttribute("Value");
-            if (value == null) {
-                value = response.getAttribute(variable); // for Asterisk 1.0.x
-            }
-
-            variables.put(variable, value);
+        value = variables.get(variable);
+        if (value != null) {
+            return value;
         }
+
+        response = server.sendAction(new GetVarAction(name, variable));
+        if (response instanceof ManagerError) {
+            throw new NoSuchChannelException("Channel '" + name + "' is not available: " + response.getMessage());
+        }
+        value = response.getAttribute("Value");
+        if (value == null) {
+            value = response.getAttribute(variable); // for Asterisk 1.0.x
+        }
+
+        variables.put(variable, value);
         return value;
     }
 
@@ -667,9 +674,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
         if (response instanceof ManagerError) {
             throw new NoSuchChannelException("Channel '" + name + "' is not available: " + response.getMessage());
         }
-        try (LockCloser closer = variables.withLock()) {
-            variables.put(variable, value);
-        }
+        variables.put(variable, value);
     }
 
     public void playDtmf(String digit) throws ManagerCommunicationException, NoSuchChannelException, IllegalArgumentException {
@@ -694,7 +699,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     }
 
     public void startMonitoring(String filename, String format, boolean mix)
-            throws ManagerCommunicationException, NoSuchChannelException {
+        throws ManagerCommunicationException, NoSuchChannelException {
         ManagerResponse response;
 
         response = server.sendAction(new MonitorAction(name, filename, format, mix));
@@ -704,7 +709,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     }
 
     public void changeMonitoring(String filename)
-            throws ManagerCommunicationException, NoSuchChannelException, IllegalArgumentException {
+        throws ManagerCommunicationException, NoSuchChannelException, IllegalArgumentException {
         ManagerResponse response;
 
         if (filename == null) {
@@ -745,7 +750,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     }
 
     public void pauseMixMonitor(MixMonitorDirection direction)
-            throws ManagerCommunicationException, NoSuchChannelException, RecordingException {
+        throws ManagerCommunicationException, NoSuchChannelException, RecordingException {
         ManagerResponse response;
         response = server.sendAction(new PauseMixMonitorAction(this.name, 1, direction.getStateName()));
         if (response instanceof ManagerError) {
@@ -757,7 +762,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     }
 
     public void unPauseMixMonitor(MixMonitorDirection direction)
-            throws ManagerCommunicationException, NoSuchChannelException, RecordingException {
+        throws ManagerCommunicationException, NoSuchChannelException, RecordingException {
         ManagerResponse response;
         response = server.sendAction(new PauseMixMonitorAction(this.name, 0, direction.getStateName()));
         if (response instanceof ManagerError) {
@@ -790,17 +795,13 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     }
 
     void updateVariable(String name, String value) {
-        try (LockCloser closer = variables.withLock()) {
-            // final String oldValue = variables.get(name);
-            variables.put(name, value);
-            // TODO add notification for updated channel variables
-        }
+        // final String oldValue = variables.get(name);
+        variables.put(name, value);
+        // TODO add notification for updated channel variables
     }
 
     public Map<String, String> getVariables() {
-        try (LockCloser closer = variables.withLock()) {
-            return new HashMap<>(variables);
-        }
+        return new HashMap<>(variables);
     }
 
     public Character getDtmfReceived() {

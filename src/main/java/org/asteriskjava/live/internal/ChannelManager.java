@@ -700,13 +700,26 @@ class ChannelManager {
         }
 
         final AsteriskChannelImpl channel = getChannelImplById(event.getUniqueId());
-        if (channel == null) {
+        if (channel != null) {
+            try (LockCloser closer = channel.withLock()) {
+                channel.updateVariable(event.getVariable(), event.getValue());
+            }
+        } else {
+            // Retry
+            if (SLEEP_TIME_BEFORE_GET_VAR_MS > 0) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(SLEEP_TIME_BEFORE_GET_VAR_MS);
+                    final AsteriskChannelImpl channel2 = getChannelImplById(event.getUniqueId());
+                    if (channel2 != null) {
+                        try (LockCloser closer = channel2.withLock()) {
+                            channel2.updateVariable(event.getVariable(), event.getValue());
+                            return;
+                        }
+                    }
+                } catch (InterruptedException ignored) {
+                }
+            }
             logger.info("Ignored VarSetEvent for unknown channel with uniqueId " + event.getUniqueId());
-            return;
-        }
-
-        try (LockCloser closer = channel.withLock()) {
-            channel.updateVariable(event.getVariable(), event.getValue());
         }
     }
 

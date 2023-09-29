@@ -14,4 +14,6 @@ public class Constants {
 
     static final String VARIABLE_TRACE_ID = "AJ_TRACE_ID";
     public static String CALL_UUID = "Call-UUID";
+    public static String GCP_PROJECT_ID = "glassy-augury-248712";
+    public static String CALL_RECORDING = "Call-Recording";
 }

@@ -482,7 +482,7 @@ class ChannelManager {
             channel.hungup(event.getDateReceived(), cause, event.getCauseTxt());
         }
 
-        logger.info("Removing channel " + channel.getName() + " due to hangup (" + cause + ")");
+        logger.info(channel.getId() + " " + channel.getName() + " hangup (" + cause + ")");
     }
 
     void handleDialEvent(DialEvent event) {
@@ -798,4 +798,17 @@ class ChannelManager {
         logger.info("Channel " + channel.getName() + " is not monitored");
     }
 
+    void handleMixMonitorStopEvent(MixMonitorStopEvent event) {
+        final AsteriskChannelImpl channel = getChannelImplById(event.getUniqueId());
+
+        if (channel == null) {
+            logger.info("Ignored MonitorStopEvent for unknown channel " + event.getChannel());
+            return;
+        }
+
+        String filePath = channel.getVariable(Constants.CALL_RECORDING);
+        if (filePath != null) {
+            StorageService.getInstance().uploadFile(filePath);
+        }
+    }
 }

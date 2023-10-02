@@ -17,7 +17,6 @@
 package org.asteriskjava.live.internal;
 
 import org.asteriskjava.live.*;
-import org.asteriskjava.lock.LockableList;
 import org.asteriskjava.lock.Locker.LockCloser;
 import org.asteriskjava.manager.action.*;
 import org.asteriskjava.manager.response.ManagerError;
@@ -43,17 +42,17 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
      * Date this channel has been created.
      */
     private final Date dateOfCreation;
-    private final LockableList<ExtensionHistoryEntry> extensionHistory;
-    private final LockableList<ChannelStateHistoryEntry> stateHistory;
-    private final LockableList<LinkedChannelHistoryEntry> linkedChannelHistory;
-    private final LockableList<DialedChannelHistoryEntry> dialedChannelHistory;
-    private final LockableList<AsteriskChannel> dialedChannels;
-    private final LockableList<AsteriskChannel> dialingChannels;
+    private final List<ExtensionHistoryEntry> extensionHistory;
+    private final List<ChannelStateHistoryEntry> stateHistory;
+    private final List<LinkedChannelHistoryEntry> linkedChannelHistory;
+    private final List<DialedChannelHistoryEntry> dialedChannelHistory;
+    private final List<AsteriskChannel> dialedChannels;
+    private final List<AsteriskChannel> dialingChannels;
     /**
      * If this channel is bridged to another channel, the linkedChannels
      * contains the channel this channel is bridged with.
      */
-    private final LockableList<AsteriskChannel> linkedChannels;
+    private final List<AsteriskChannel> linkedChannels;
     private final ConcurrentMap<String, String> variables;
     /**
      * Unique id of this channel.
@@ -154,14 +153,14 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
         this.name = name;
         this.id = id;
         this.dateOfCreation = dateOfCreation;
-        this.extensionHistory = new LockableList<>(new ArrayList<>());
-        this.stateHistory = new LockableList<>(new ArrayList<>());
-        this.linkedChannelHistory = new LockableList<>(new ArrayList<>());
-        this.dialedChannelHistory = new LockableList<>(new ArrayList<>());
+        this.extensionHistory = Collections.synchronizedList(new ArrayList<>());
+        this.stateHistory = Collections.synchronizedList(new ArrayList<>());
+        this.linkedChannelHistory = Collections.synchronizedList(new ArrayList<>());
+        this.dialedChannelHistory = Collections.synchronizedList(new ArrayList<>());
         this.variables = new ConcurrentHashMap<>();
-        this.dialedChannels = new LockableList<>(new ArrayList<>());
-        this.dialingChannels = new LockableList<>(new ArrayList<>());
-        this.linkedChannels = new LockableList<>(new ArrayList<>());
+        this.dialedChannels = Collections.synchronizedList(new ArrayList<>());
+        this.dialingChannels = Collections.synchronizedList(new ArrayList<>());
+        this.linkedChannels = Collections.synchronizedList(new ArrayList<>());
     }
 
     public String getId() {
@@ -235,11 +234,9 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     }
 
     public boolean wasInState(ChannelState state) {
-        try (LockCloser closer = stateHistory.withLock()) {
-            for (ChannelStateHistoryEntry historyEntry : stateHistory) {
-                if (historyEntry.getState() == state) {
-                    return true;
-                }
+        for (ChannelStateHistoryEntry historyEntry : stateHistory) {
+            if (historyEntry.getState() == state) {
+                return true;
             }
         }
 
@@ -260,6 +257,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     void stateChanged(Date date, ChannelState state) {
         long start = System.currentTimeMillis();
         try (LockCloser closer = this.withLock()) {
+            long startInternal = System.currentTimeMillis();
             final ChannelStateHistoryEntry historyEntry;
             final ChannelState oldState = this.state;
 
@@ -271,12 +269,14 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
             // state
             // + " (" + name + ")");
             historyEntry = new ChannelStateHistoryEntry(date, state);
-            try (LockCloser closer2 = stateHistory.withLock()) {
-                stateHistory.add(historyEntry);
-            }
+            stateHistory.add(historyEntry);
 
             this.state = state;
             firePropertyChange(PROPERTY_STATE, oldState, state);
+            long exeTime = System.currentTimeMillis() - startInternal;
+            if (exeTime > 1000) {
+                logger.info(exeTime + "ms");
+            }
         }
         long exeTime = System.currentTimeMillis() - start;
         if (exeTime > 1000) {
@@ -303,12 +303,10 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     public Extension getCurrentExtension() {
         final Extension extension;
 
-        try (LockCloser closer = extensionHistory.withLock()) {
-            if (extensionHistory.isEmpty()) {
-                extension = null;
-            } else {
-                extension = extensionHistory.get(extensionHistory.size() - 1).getExtension();
-            }
+        if (extensionHistory.isEmpty()) {
+            extension = null;
+        } else {
+            extension = extensionHistory.get(extensionHistory.size() - 1).getExtension();
         }
 
         return extension;
@@ -317,12 +315,10 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     public Extension getFirstExtension() {
         final Extension extension;
 
-        try (LockCloser closer = extensionHistory.withLock()) {
-            if (extensionHistory.isEmpty()) {
-                extension = null;
-            } else {
-                extension = extensionHistory.get(0).getExtension();
-            }
+        if (extensionHistory.isEmpty()) {
+            extension = null;
+        } else {
+            extension = extensionHistory.get(0).getExtension();
         }
 
         return extension;
@@ -331,9 +327,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     public List<ExtensionHistoryEntry> getExtensionHistory() {
         final List<ExtensionHistoryEntry> copy;
 
-        try (LockCloser closer = extensionHistory.withLock()) {
-            copy = new ArrayList<>(extensionHistory);
-        }
+        copy = new ArrayList<>(extensionHistory);
 
         return copy;
     }
@@ -350,9 +344,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
 
         historyEntry = new ExtensionHistoryEntry(date, extension);
 
-        try (LockCloser closer = extensionHistory.withLock()) {
-            extensionHistory.add(historyEntry);
-        }
+        extensionHistory.add(historyEntry);
 
         firePropertyChange(PROPERTY_CURRENT_EXTENSION, oldCurrentExtension, extension);
     }
@@ -410,9 +402,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     public List<AsteriskChannel> getDialedChannels() {
         final List<AsteriskChannel> copy;
 
-        try (LockCloser closer = dialedChannels.withLock()) {
-            copy = new ArrayList<>(dialedChannels);
-        }
+        copy = new ArrayList<>(dialedChannels);
 
         return copy;
     }
@@ -420,11 +410,9 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     /* dialed channels */
 
     public AsteriskChannel getDialedChannel() {
-        try (LockCloser closer = dialedChannels.withLock()) {
-            for (AsteriskChannel channel : dialedChannels) {
-                if (channel != null)
-                    return channel;
-            }
+        for (AsteriskChannel channel : dialedChannels) {
+            if (channel != null)
+                return channel;
         }
         return null;
     }
@@ -432,9 +420,7 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     public List<DialedChannelHistoryEntry> getDialedChannelHistory() {
         final List<DialedChannelHistoryEntry> copy;
 
-        try (LockCloser closer = dialedChannelHistory.withLock()) {
-            copy = new ArrayList<>(dialedChannelHistory);
-        }
+        copy = new ArrayList<>(dialedChannelHistory);
 
         return copy;
     }
@@ -442,19 +428,15 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     void channelDialed(Date date, AsteriskChannel dialedChannel) {
         try (LockCloser closer = this.withLock()) {
             final AsteriskChannel oldDialedChannel;
-            try (LockCloser closer2 = dialedChannels.withLock()) {
-                if (dialedChannels.isEmpty())
-                    oldDialedChannel = null;
-                else
-                    oldDialedChannel = dialedChannels.get(dialedChannels.size() - 1);
-                dialedChannels.add(dialedChannel);
-            }
+            if (dialedChannels.isEmpty())
+                oldDialedChannel = null;
+            else
+                oldDialedChannel = dialedChannels.get(dialedChannels.size() - 1);
+            dialedChannels.add(dialedChannel);
             final DialedChannelHistoryEntry historyEntry;
 
             historyEntry = new DialedChannelHistoryEntry(date, dialedChannel);
-            try (LockCloser closer3 = dialedChannelHistory.withLock()) {
-                dialedChannelHistory.add(historyEntry);
-            }
+            dialedChannelHistory.add(historyEntry);
 
             firePropertyChange(PROPERTY_DIALED_CHANNEL, oldDialedChannel, dialedChannel);
         }
@@ -463,24 +445,20 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     /* dialed channels */
 
     public AsteriskChannel getDialingChannel() {
-        try (LockCloser closer = dialingChannels.withLock()) {
-            if (dialingChannels.isEmpty())
-                return null;
-            return dialingChannels.get(0);
-        }
+        if (dialingChannels.isEmpty())
+            return null;
+        return dialingChannels.get(0);
     }
 
     void channelDialing(Date date, AsteriskChannel dialingChannel) {
         try (LockCloser closer = this.withLock()) {
             final AsteriskChannel oldDialingChannel;
-            try (LockCloser closer2 = this.dialingChannels.withLock()) {
-                if (this.dialingChannels.isEmpty()) {
-                    oldDialingChannel = null;
-                    this.dialingChannels.add(dialingChannel);
-                } else {
-                    oldDialingChannel = this.dialingChannels.get(0);
-                    this.dialingChannels.set(0, dialingChannel);
-                }
+            if (this.dialingChannels.isEmpty()) {
+                oldDialingChannel = null;
+                this.dialingChannels.add(dialingChannel);
+            } else {
+                oldDialingChannel = this.dialingChannels.get(0);
+                this.dialingChannels.set(0, dialingChannel);
             }
 
             firePropertyChange(PROPERTY_DIALING_CHANNEL, oldDialingChannel, dialingChannel);
@@ -490,19 +468,15 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     /* linked channels */
 
     public AsteriskChannel getLinkedChannel() {
-        try (LockCloser closer = linkedChannels.withLock()) {
-            if (linkedChannels.isEmpty())
-                return null;
-            return linkedChannels.get(0);
-        }
+        if (linkedChannels.isEmpty())
+            return null;
+        return linkedChannels.get(0);
     }
 
     public List<LinkedChannelHistoryEntry> getLinkedChannelHistory() {
         final List<LinkedChannelHistoryEntry> copy;
 
-        try (LockCloser closer = linkedChannelHistory.withLock()) {
-            copy = new ArrayList<>(linkedChannelHistory);
-        }
+        copy = new ArrayList<>(linkedChannelHistory);
 
         return copy;
     }
@@ -520,22 +494,18 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     void channelLinked(Date date, AsteriskChannel linkedChannel) {
         try (LockCloser closer = this.withLock()) {
             final AsteriskChannel oldLinkedChannel;
-            try (LockCloser closer2 = this.linkedChannels.withLock()) {
-                if (this.linkedChannels.isEmpty()) {
-                    oldLinkedChannel = null;
-                    this.linkedChannels.add(linkedChannel);
-                } else {
-                    oldLinkedChannel = this.linkedChannels.get(0);
-                    this.linkedChannels.set(0, linkedChannel);
-                }
+            if (this.linkedChannels.isEmpty()) {
+                oldLinkedChannel = null;
+                this.linkedChannels.add(linkedChannel);
+            } else {
+                oldLinkedChannel = this.linkedChannels.get(0);
+                this.linkedChannels.set(0, linkedChannel);
             }
 
             final LinkedChannelHistoryEntry historyEntry;
 
             historyEntry = new LinkedChannelHistoryEntry(date, linkedChannel);
-            try (LockCloser closer3 = linkedChannelHistory.withLock()) {
-                linkedChannelHistory.add(historyEntry);
-            }
+            linkedChannelHistory.add(historyEntry);
             this.wasLinked = true;
             firePropertyChange(PROPERTY_LINKED_CHANNEL, oldLinkedChannel, linkedChannel);
         }
@@ -545,23 +515,19 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
         try (LockCloser closer = this.withLock()) {
             final AsteriskChannel oldLinkedChannel;
 
-            try (LockCloser closer2 = this.linkedChannels.withLock()) {
-                if (this.linkedChannels.isEmpty()) {
-                    oldLinkedChannel = null;
-                } else {
-                    oldLinkedChannel = this.linkedChannels.get(0);
-                }
-                linkedChannels.clear();
+            if (this.linkedChannels.isEmpty()) {
+                oldLinkedChannel = null;
+            } else {
+                oldLinkedChannel = this.linkedChannels.get(0);
             }
+            linkedChannels.clear();
 
             final LinkedChannelHistoryEntry historyEntry;
 
-            try (LockCloser closer3 = linkedChannelHistory.withLock()) {
-                if (linkedChannelHistory.isEmpty()) {
-                    historyEntry = null;
-                } else {
-                    historyEntry = linkedChannelHistory.get(linkedChannelHistory.size() - 1);
-                }
+            if (linkedChannelHistory.isEmpty()) {
+                historyEntry = null;
+            } else {
+                historyEntry = linkedChannelHistory.get(linkedChannelHistory.size() - 1);
             }
 
             if (historyEntry != null) {
@@ -630,13 +596,11 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
         throws ManagerCommunicationException, NoSuchChannelException {
         ManagerResponse response;
 
-        try (LockCloser closer = linkedChannels.withLock()) {
-            if (linkedChannels.isEmpty()) {
-                response = server.sendAction(new RedirectAction(name, context, exten, priority));
-            } else {
-                response = server.sendAction(new RedirectAction(name, linkedChannels.get(0).getName(), context, exten,
-                    priority, context, exten, priority));
-            }
+        if (linkedChannels.isEmpty()) {
+            response = server.sendAction(new RedirectAction(name, context, exten, priority));
+        } else {
+            response = server.sendAction(new RedirectAction(name, linkedChannels.get(0).getName(), context, exten,
+                priority, context, exten, priority));
         }
 
         if (response instanceof ManagerError) {
@@ -851,8 +815,8 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
     @Override
     public String toString() {
         final StringBuilder sb;
-        final LockableList<AsteriskChannel> dialingChannel;
-        final LockableList<AsteriskChannel> linkedChannel;
+        final List<AsteriskChannel> dialingChannel;
+        final List<AsteriskChannel> linkedChannel;
 
         sb = new StringBuilder("AsteriskChannel[");
 
@@ -870,13 +834,11 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
             sb.append("dialedChannel=null,");
         } else {
             sb.append("dialedChannel=AsteriskChannel[");
-            try (LockCloser closer = dialedChannels.withLock()) {
-                for (AsteriskChannel dialedChannel : dialedChannels) {
-                    sb.append("[id='").append(dialedChannel.getId()).append("',");
-                    sb.append("name='").append(dialedChannel.getName()).append("'],");
-                }
-                sb.append("],");
+            for (AsteriskChannel dialedChannel : dialedChannels) {
+                sb.append("[id='").append(dialedChannel.getId()).append("',");
+                sb.append("name='").append(dialedChannel.getName()).append("'],");
             }
+            sb.append("],");
         }
         if (dialingChannel.isEmpty()) {
             sb.append("dialingChannel=null,");
@@ -885,15 +847,13 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
             sb.append("id='").append(dialingChannel.get(0).getId()).append("',");
             sb.append("name='").append(dialingChannel.get(0).getName()).append("'],");
         }
-        try (LockCloser closer = linkedChannel.withLock()) {
-            if (linkedChannel.isEmpty()) {
-                sb.append("linkedChannel=null");
-            } else {
-                sb.append("linkedChannel=AsteriskChannel[");
-                {
-                    sb.append("id='").append(linkedChannel.get(0).getId()).append("',");
-                    sb.append("name='").append(linkedChannel.get(0).getName()).append("']");
-                }
+        if (linkedChannel.isEmpty()) {
+            sb.append("linkedChannel=null");
+        } else {
+            sb.append("linkedChannel=AsteriskChannel[");
+            {
+                sb.append("id='").append(linkedChannel.get(0).getId()).append("',");
+                sb.append("name='").append(linkedChannel.get(0).getName()).append("']");
             }
         }
         sb.append("]");

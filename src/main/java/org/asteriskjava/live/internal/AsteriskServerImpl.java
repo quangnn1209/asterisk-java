@@ -21,7 +21,6 @@ import org.asteriskjava.config.ConfigFile;
 import org.asteriskjava.live.*;
 import org.asteriskjava.lock.Lockable;
 import org.asteriskjava.lock.LockableList;
-import org.asteriskjava.lock.LockableSet;
 import org.asteriskjava.lock.Locker.LockCloser;
 import org.asteriskjava.manager.*;
 import org.asteriskjava.manager.action.*;
@@ -68,7 +67,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
     private boolean initialized = false;
     private boolean initializing = false;
 
-    final LockableSet<AsteriskServerListener> listeners;
+    final Set<AsteriskServerListener> listeners;
 
     final ChannelManager channelManager;
     final MeetMeManager meetMeManager;
@@ -132,7 +131,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
      */
     public AsteriskServerImpl() {
         idCounter = new AtomicLong();
-        listeners = new LockableSet<>(new LinkedHashSet<>());
+        listeners = Collections.synchronizedSet(new HashSet<>());
         originateCallbacks = new ConcurrentHashMap<>();
         channelManager = new ChannelManager(this);
         agentManager = new AgentManager(this);
@@ -694,18 +693,15 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
     @Override
     public void addAsteriskServerListener(AsteriskServerListener listener) throws ManagerCommunicationException {
         initializeIfNeeded();
-        try (LockCloser closer = listeners.withLock()) {
-            if (!listeners.contains(listener)) {
-                listeners.add(listener);
-            }
+        if (!listeners.contains(listener)) {
+            listeners.add(listener);
         }
     }
 
     @Override
     public void removeAsteriskServerListener(AsteriskServerListener listener) {
-        try (LockCloser closer = listeners.withLock()) {
-            listeners.remove(listener);
-        }
+
+        listeners.remove(listener);
     }
 
     @Override
@@ -726,25 +722,23 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
     }
 
     void fireNewAsteriskChannel(AsteriskChannel channel) {
-        try (LockCloser closer = listeners.withLock()) {
-            for (AsteriskServerListener listener : listeners) {
-                try {
-                    listener.onNewAsteriskChannel(channel);
-                } catch (Exception e) {
-                    logger.warn("Exception in onNewAsteriskChannel()", e);
-                }
+
+        for (AsteriskServerListener listener : listeners) {
+            try {
+                listener.onNewAsteriskChannel(channel);
+            } catch (Exception e) {
+                logger.warn("Exception in onNewAsteriskChannel()", e);
             }
         }
     }
 
     void fireNewMeetMeUser(MeetMeUser user) {
-        try (LockCloser closer = listeners.withLock()) {
-            for (AsteriskServerListener listener : listeners) {
-                try {
-                    listener.onNewMeetMeUser(user);
-                } catch (Exception e) {
-                    logger.warn("Exception in onNewMeetMeUser()", e);
-                }
+
+        for (AsteriskServerListener listener : listeners) {
+            try {
+                listener.onNewMeetMeUser(user);
+            } catch (Exception e) {
+                logger.warn("Exception in onNewMeetMeUser()", e);
             }
         }
     }
@@ -893,7 +887,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
         // End of agent-related events
 
         long executeTime = System.currentTimeMillis() - start;
-        if (executeTime > 500) {
+        if (executeTime > 1000) {
             logger.info(event + " " + (System.currentTimeMillis() - start) + "ms");
         }
         // dispatch the events to the chainListener if they exist.
@@ -1113,25 +1107,23 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
     }
 
     void fireNewAgent(AsteriskAgentImpl agent) {
-        try (LockCloser closer = listeners.withLock()) {
-            for (AsteriskServerListener listener : listeners) {
-                try {
-                    listener.onNewAgent(agent);
-                } catch (Exception e) {
-                    logger.warn("Exception in onNewAgent()", e);
-                }
+
+        for (AsteriskServerListener listener : listeners) {
+            try {
+                listener.onNewAgent(agent);
+            } catch (Exception e) {
+                logger.warn("Exception in onNewAgent()", e);
             }
         }
     }
 
     void fireNewQueueEntry(AsteriskQueueEntry entry) {
-        try (LockCloser closer = listeners.withLock()) {
-            for (AsteriskServerListener listener : listeners) {
-                try {
-                    listener.onNewQueueEntry(entry);
-                } catch (Exception e) {
-                    logger.warn("Exception in onNewQueueEntry()", e);
-                }
+
+        for (AsteriskServerListener listener : listeners) {
+            try {
+                listener.onNewQueueEntry(entry);
+            } catch (Exception e) {
+                logger.warn("Exception in onNewQueueEntry()", e);
             }
         }
     }

@@ -93,7 +93,7 @@ public class DialActivityImpl extends ActivityHelper<DialActivity> implements Di
                 // Unless the operated cancelled the call
                 if (!this.cancelledByOperator) {
                     this.setLastException(new PBXException(("OperatorEndedCall")));
-                    DialActivityImpl.logger.error("dialout to " + this._accepting.getFullyQualifiedName() + " failed.");
+//                    DialActivityImpl.logger.error("dialout to " + this._accepting.getFullyQualifiedName() + " failed.");
                 }
             } else {
                 // Dial succeeded.

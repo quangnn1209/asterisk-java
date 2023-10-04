@@ -815,13 +815,15 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
         } else if (event instanceof VarSetEvent) {
             channelManager.handleVarSetEvent((VarSetEvent) event);
         } else if (event instanceof DtmfEvent) {
-            channelManager.handleDtmfEvent((DtmfEvent) event);
+//            channelManager.handleDtmfEvent((DtmfEvent) event);
         } else if (event instanceof MonitorStartEvent) {
-            channelManager.handleMonitorStartEvent((MonitorStartEvent) event);
+//            channelManager.handleMonitorStartEvent((MonitorStartEvent) event);
         } else if (event instanceof MonitorStopEvent) {
-            channelManager.handleMonitorStopEvent((MonitorStopEvent) event);
+//            channelManager.handleMonitorStopEvent((MonitorStopEvent) event);
         } else if (event instanceof MixMonitorStopEvent) {
             channelManager.handleMixMonitorStopEvent((MixMonitorStopEvent) event);
+        } else if (event instanceof MixMonitorStartEvent) {
+//            channelManager.handleMixMonitorStopEvent((MixMonitorStartEvent) event);
         } else if (event instanceof RtcpSentEvent) {
 //            logger.info(event);
         } else if (event instanceof RtcpReceivedEvent) {
@@ -883,6 +885,8 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             agentManager.handleAgentLoginEvent((AgentLoginEvent) event);
         } else if (event instanceof AgentLogoffEvent) {
             agentManager.handleAgentLogoffEvent((AgentLogoffEvent) event);
+        } else {
+            logger.info("Skipped event " + event);
         }
         // End of agent-related events
 

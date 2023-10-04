@@ -28,6 +28,34 @@ public abstract class AbstractMonitorEvent extends ManagerEvent {
     private static final long serialVersionUID = 1L;
     private String channel;
     private String uniqueId;
+    private String linkedid;
+    private String language;
+
+    public String getLinkedid() {
+        return linkedid;
+    }
+
+    public void setLinkedid(String linkedid) {
+        this.linkedid = linkedid;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getAccountcode() {
+        return accountcode;
+    }
+
+    public void setAccountcode(String accountcode) {
+        this.accountcode = accountcode;
+    }
+
+    private String accountcode;
 
     /**
      * @param source

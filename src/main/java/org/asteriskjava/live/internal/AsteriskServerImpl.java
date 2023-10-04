@@ -885,6 +885,11 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             agentManager.handleAgentLoginEvent((AgentLoginEvent) event);
         } else if (event instanceof AgentLogoffEvent) {
             agentManager.handleAgentLogoffEvent((AgentLogoffEvent) event);
+        } else if (event instanceof ExtensionStatusEvent
+            || event instanceof QueueParamsEvent
+            || event instanceof QueueStatusCompleteEvent
+            || event instanceof AgentsCompleteEvent
+            || event instanceof StatusCompleteEvent) {
         } else {
             logger.info("Skipped event " + event);
         }

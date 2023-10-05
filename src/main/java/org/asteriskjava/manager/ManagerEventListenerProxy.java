@@ -65,7 +65,7 @@ public class ManagerEventListenerProxy implements ManagerEventListener {
         });
         int queueSize = executor.getQueue().size();
         if (queueSize > 50) {
-            logger.info(executor.getQueue().size() + " threads in queue");
+            logger.info(executor.getActiveCount() + " active, " + executor.getQueue().size() + " threads in queue");
         }
     }//onManagerEvent
 

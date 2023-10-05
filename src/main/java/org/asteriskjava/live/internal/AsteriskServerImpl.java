@@ -902,7 +902,9 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             || event instanceof UnholdEvent
             || event instanceof StatusEvent
             || event instanceof DeviceStateChangeEvent
-            || event instanceof MessageWaitingEvent) {
+            || event instanceof MessageWaitingEvent
+            || event instanceof MusicOnHoldStartEvent
+            || event instanceof MusicOnHoldStopEvent) {
         } else {
             logger.info("Skipped event " + event);
         }

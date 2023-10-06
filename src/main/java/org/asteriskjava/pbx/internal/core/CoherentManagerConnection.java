@@ -101,7 +101,7 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
     private boolean expectRenameEvents = true;
 
     public static synchronized void init()
-            throws IllegalStateException, IOException, AuthenticationFailedException, TimeoutException, InterruptedException {
+        throws IllegalStateException, IOException, AuthenticationFailedException, TimeoutException, InterruptedException {
         if (self != null)
             logger.warn("The CoherentManagerConnection has already been initialised");
         else {
@@ -141,7 +141,7 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
     }
 
     private CoherentManagerConnection()
-            throws IllegalStateException, IOException, AuthenticationFailedException, TimeoutException {
+        throws IllegalStateException, IOException, AuthenticationFailedException, TimeoutException {
         super();
         connector = new Connector();
         this.configureConnection();
@@ -169,10 +169,10 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
                 // $NON-NLS-1$
 
                 CoherentManagerConnection.logger.debug("set variable " + variableName + " to " + value //$NON-NLS-2$
-                        + " on " + channel);
+                    + " on " + channel);
             } else {
                 throw new PBXException("failed to set variable '" + variableName + "' on channel " + channel + " to '" //$NON-NLS-2$ //$NON-NLS-3$
-                        + value + "'" + (response != null ? " Error:" + response.getMessage() : "")); //$NON-NLS-2$ //$NON-NLS-3$
+                    + value + "'" + (response != null ? " Error:" + response.getMessage() : "")); //$NON-NLS-2$ //$NON-NLS-3$
             }
         } catch (IllegalArgumentException | IllegalStateException | IOException | TimeoutException e) {
             logger.error(e, e);
@@ -237,9 +237,9 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
     }
 
     public static ResponseEvents sendEventGeneratingAction(EventGeneratingAction action)
-            throws EventTimeoutException, IllegalArgumentException, IllegalStateException, IOException {
+        throws EventTimeoutException, IllegalArgumentException, IllegalStateException, IOException {
         org.asteriskjava.manager.ResponseEvents events = CoherentManagerConnection.managerConnection
-                .sendEventGeneratingAction(action.getAJEventGeneratingAction());
+            .sendEventGeneratingAction(action.getAJEventGeneratingAction());
 
         ResponseEvents convertedEvents = new ResponseEvents();
         for (org.asteriskjava.manager.event.ResponseEvent event : events.getEvents()) {
@@ -250,9 +250,9 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
     }
 
     public static ResponseEvents sendEventGeneratingAction(EventGeneratingAction action, int timeout)
-            throws EventTimeoutException, IllegalArgumentException, IllegalStateException, IOException {
+        throws EventTimeoutException, IllegalArgumentException, IllegalStateException, IOException {
         org.asteriskjava.manager.ResponseEvents events = CoherentManagerConnection.managerConnection
-                .sendEventGeneratingAction(action.getAJEventGeneratingAction(), timeout);
+            .sendEventGeneratingAction(action.getAJEventGeneratingAction(), timeout);
 
         ResponseEvents convertedEvents = new ResponseEvents();
         for (org.asteriskjava.manager.event.ResponseEvent event : events.getEvents()) {
@@ -275,18 +275,18 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
      * @throws OperationNotSupportedException
      */
     public static ManagerResponse sendAction(final ManagerAction action, final int timeout)
-            throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException {
+        throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException {
         if (logger.isDebugEnabled())
             CoherentManagerConnection.logger.debug("Sending Action: " + action.toString());
 
         CoherentManagerConnection.getInstance();
         if ((CoherentManagerConnection.managerConnection != null)
-                && (CoherentManagerConnection.managerConnection.getState() == ManagerConnectionState.CONNECTED)) {
+            && (CoherentManagerConnection.managerConnection.getState() == ManagerConnectionState.CONNECTED)) {
             final org.asteriskjava.manager.action.ManagerAction ajAction = action.getAJAction();
 
             // TODO: textback
             org.asteriskjava.manager.response.ManagerResponse response = CoherentManagerConnection.managerConnection
-                    .sendAction(ajAction, timeout);
+                .sendAction(ajAction, timeout);
             ManagerResponse convertedResponse = null;
 
             // UserEventActions always return a null
@@ -295,7 +295,7 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
 
             if ((convertedResponse != null) && (convertedResponse.getResponse().compareToIgnoreCase("Error") == 0)) {
                 CoherentManagerConnection.logger.warn("Action '" + ajAction + "' failed, Response: "
-                        + convertedResponse.getResponse() + " Message: " + convertedResponse.getMessage());
+                    + convertedResponse.getResponse() + " Message: " + convertedResponse.getMessage());
             }
             return convertedResponse;
         }
@@ -308,7 +308,7 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
 
         this._reconnectLatch = new CountDownLatch(1);
         while ((trys > 0) && ((CoherentManagerConnection.managerConnection == null)
-                || (CoherentManagerConnection.managerConnection.getState() != ManagerConnectionState.CONNECTED))) {
+            || (CoherentManagerConnection.managerConnection.getState() != ManagerConnectionState.CONNECTED))) {
             if (trys == 3) {
                 CoherentManagerConnection.logger.warn("Awaiting Manager connection");
             }
@@ -326,33 +326,10 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
         return CoherentManagerConnection.managerConnection.getState();
     }
 
-    private void configureConnection()
-            throws IOException, AuthenticationFailedException, TimeoutException, IllegalStateException {
+    public void configureConnection()
+        throws IOException, AuthenticationFailedException, TimeoutException, IllegalStateException {
         final AsteriskSettings profile = PBXFactory.getActiveProfile();
         CoherentManagerConnection.managerConnection = CoherentManagerConnection.connector.connect(profile);
-
-        // After a reconnect we will have duplicate eventQueues and
-        // realtimeEventQueues but
-        // the original queues will be drained quite quickly (on the small
-        // chance
-        // that it hasn't already)
-        // and should have no duplicate events. Once drained the queue will be
-        // garbage collected.
-//        CoherentManagerEventQueue newRealtime = new CoherentManagerEventQueue("Realtime",
-//                CoherentManagerConnection.managerConnection);
-//        if (this.realtimeEventQueue != null) {
-//            this.realtimeEventQueue.stop();
-//            newRealtime.transferListeners(this.realtimeEventQueue);
-//        }
-//        this.realtimeEventQueue = newRealtime;
-
-//        CoherentManagerEventQueue newStandard = new CoherentManagerEventQueue("Standard",
-//                CoherentManagerConnection.managerConnection);
-//        if (this.eventQueue != null) {
-//            this.eventQueue.stop();
-//            newStandard.transferListeners(this.eventQueue);
-//        }
-//        this.eventQueue = newStandard;
     }
 
     private void checkFeatures() throws IOException, TimeoutException {

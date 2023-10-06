@@ -26,6 +26,8 @@ import org.asteriskjava.manager.*;
 import org.asteriskjava.manager.action.*;
 import org.asteriskjava.manager.event.*;
 import org.asteriskjava.manager.response.*;
+import org.asteriskjava.pbx.PBXFactory;
+import org.asteriskjava.pbx.internal.core.AsteriskPBX;
 import org.asteriskjava.util.AstUtil;
 import org.asteriskjava.util.DateUtil;
 import org.asteriskjava.util.Log;
@@ -905,6 +907,11 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             || event instanceof MessageWaitingEvent
             || event instanceof MusicOnHoldStartEvent
             || event instanceof MusicOnHoldStopEvent) {
+        } else if (event instanceof ReloadEvent) {
+            AsteriskPBX pbx = (AsteriskPBX) PBXFactory.getActivePBX();
+            if (!pbx.isConnected()) {
+                pbx.reconnect();
+            }
         } else {
             logger.info("Skipped event " + event);
         }

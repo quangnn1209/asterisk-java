@@ -1105,12 +1105,7 @@ public class ManagerConnectionImpl extends Lockable implements ManagerConnection
                     // After sending the DisconnectThread that thread will die
                     // anyway.
                     cleanup();
-                    Thread reconnectThread = new Thread(new Runnable() {
-
-                        public void run() {
-                            reconnect();
-                        }
-                    });
+                    Thread reconnectThread = new Thread(this::reconnect);
                     reconnectThread.setName("Asterisk-Java ManagerConnection-" + id + "-Reconnect-"
                         + reconnectThreadCounter.getAndIncrement());
                     reconnectThread.setDaemon(true);

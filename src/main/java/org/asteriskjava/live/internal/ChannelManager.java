@@ -437,8 +437,19 @@ class ChannelManager {
         }
 
         if (event.getChannelState() != null) {
+            ChannelState channelState = ChannelState.valueOf(event.getChannelState());
+            if (channel.isRvm2nd() && (ChannelState.RINGING == channelState
+                || ChannelState.RING == channelState
+                || ChannelState.UP == channelState)) {
+                // Hangup 1st leg of RVM
+                AsteriskChannelImpl channel1st = getChannelImplById(channel.getRvm1stId());
+                if (channel1st != null) {
+                    channel1st.hangup(HangupCause.AST_CAUSE_BUSY);
+                }
+            }
+
             try (LockCloser closer = channel.withLock()) {
-                channel.stateChanged(event.getDateReceived(), ChannelState.valueOf(event.getChannelState()));
+                channel.stateChanged(event.getDateReceived(), channelState);
             }
         }
     }

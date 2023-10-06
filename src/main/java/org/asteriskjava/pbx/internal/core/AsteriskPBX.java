@@ -824,13 +824,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
 
     @Override
     public Trunk buildTrunk(final String trunk) {
-        return new Trunk() {
-
-            @Override
-            public String getTrunkAsString() {
-                return trunk;
-            }
-        };
+        return () -> trunk;
     }
 
     public List<ChannelProxy> getChannelList() {
@@ -841,4 +835,11 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
         return expectRenameEvents;
     }
 
+    public void reconnect() {
+        try {
+            CoherentManagerConnection.getInstance().configureConnection();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

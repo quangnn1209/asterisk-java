@@ -788,7 +788,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
      * delegated to the dispatchEvent method.
      */
     public void onManagerEvent(ManagerEvent event) {
-        logger.info(event);
+//        logger.info(event);
         long start = System.currentTimeMillis();
         // Handle Channel related events
         if (event instanceof ConnectEvent) {
@@ -895,7 +895,6 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             || event instanceof StatusCompleteEvent
             || event instanceof SoftHangupRequestEvent
             || event instanceof HangupRequestEvent
-            || event instanceof DialStateEvent // This progress
             || event instanceof NewConnectedLineEvent // This Down??
             || event instanceof BridgeLeaveEvent
             || event instanceof BridgeDestroyEvent

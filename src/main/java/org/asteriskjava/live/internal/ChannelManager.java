@@ -339,6 +339,29 @@ class ChannelManager {
         }
     }
 
+    public void handleDialStateEvent(DialStateEvent event) {
+//        if ("Ringing".equals(event.getDestChannelStateDesc())) {
+        if ("PROGRESS".equals(event.getDialStatus())) {
+            if (event.getDestUniqueId().startsWith("RVM2")) { // state of 2nd call
+                AsteriskChannelImpl existingChannel = getChannelImplById(event.getDestUniqueId());
+                if (existingChannel != null) {
+                    // Hangup 1st leg of RVM
+                    AsteriskChannelImpl channel1st = getChannelImplById(existingChannel.getRvm1stId());
+                    if (channel1st != null) {
+                        logger.info(event.getDestUniqueId() + ": hangup 1st call");
+                        channel1st.hangup(HangupCause.AST_CAUSE_BUSY);
+                    }
+                }
+            } else if (event.getDestUniqueId().startsWith("RVM")) { // state of 1st call
+                AsteriskChannelImpl existingChannel = getChannelImplById(event.getDestUniqueId());
+                if (existingChannel != null) {
+                    logger.info(event.getDestUniqueId() + ": change state to RING");
+                    existingChannel.stateChanged(event.getDateReceived(), ChannelState.RING);
+                }
+            }
+        }
+    }
+
     void handleNewExtenEvent(NewExtenEvent event) {
         AsteriskChannelImpl channel;
         final Extension extension;
@@ -438,16 +461,6 @@ class ChannelManager {
 
         if (event.getChannelState() != null) {
             ChannelState channelState = ChannelState.valueOf(event.getChannelState());
-            if (channel.isRvm2nd() && (ChannelState.RINGING == channelState
-                || ChannelState.RING == channelState
-                || ChannelState.UP == channelState)) {
-                // Hangup 1st leg of RVM
-                AsteriskChannelImpl channel1st = getChannelImplById(channel.getRvm1stId());
-                if (channel1st != null) {
-                    channel1st.hangup(HangupCause.AST_CAUSE_BUSY);
-                }
-            }
-
             try (LockCloser closer = channel.withLock()) {
                 channel.stateChanged(event.getDateReceived(), channelState);
             }

@@ -280,7 +280,7 @@ public class DefaultManagerConnection implements ManagerConnection {
     }
 
     public void login(String events)
-            throws IllegalStateException, IOException, AuthenticationFailedException, TimeoutException {
+        throws IllegalStateException, IOException, AuthenticationFailedException, TimeoutException {
         impl.login(events);
     }
 
@@ -289,34 +289,34 @@ public class DefaultManagerConnection implements ManagerConnection {
     }
 
     public ManagerResponse sendAction(ManagerAction action)
-            throws IOException, TimeoutException, IllegalArgumentException, IllegalStateException {
+        throws IOException, TimeoutException, IllegalArgumentException, IllegalStateException {
         return impl.sendAction(action);
     }
 
     public ManagerResponse sendAction(ManagerAction action, long timeout)
-            throws IOException, TimeoutException, IllegalArgumentException, IllegalStateException {
+        throws IOException, TimeoutException, IllegalArgumentException, IllegalStateException {
         return impl.sendAction(action, timeout);
     }
 
     public void sendAction(ManagerAction action, SendActionCallback callbackHandler)
-            throws IOException, IllegalArgumentException, IllegalStateException {
+        throws IOException, IllegalArgumentException, IllegalStateException {
         impl.sendAction(action, callbackHandler);
     }
 
     public ResponseEvents sendEventGeneratingAction(EventGeneratingAction action)
-            throws IOException, EventTimeoutException, IllegalArgumentException, IllegalStateException {
+        throws IOException, EventTimeoutException, IllegalArgumentException, IllegalStateException {
         return impl.sendEventGeneratingAction(action);
     }
 
     public ResponseEvents sendEventGeneratingAction(EventGeneratingAction action, long timeout)
-            throws IOException, EventTimeoutException, IllegalArgumentException, IllegalStateException {
+        throws IOException, EventTimeoutException, IllegalArgumentException, IllegalStateException {
         return impl.sendEventGeneratingAction(action, timeout);
     }
 
     @Override
     public void sendEventGeneratingAction(EventGeneratingAction action,
                                           SendEventGeneratingActionCallback callback)
-            throws IOException, IllegalArgumentException, IllegalStateException {
+        throws IOException, IllegalArgumentException, IllegalStateException {
         impl.sendEventGeneratingAction(action, callback);
     }
 
@@ -347,6 +347,5 @@ public class DefaultManagerConnection implements ManagerConnection {
     @Override
     public void deregisterEventClass(Class<? extends ManagerEvent> eventClass) {
         impl.deregisterEventClass(eventClass);
-
     }
 }

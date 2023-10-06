@@ -834,12 +834,4 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener {
     public boolean expectRenameEvents() {
         return expectRenameEvents;
     }
-
-    public void reconnect() {
-        try {
-            CoherentManagerConnection.getInstance().configureConnection();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

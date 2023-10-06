@@ -26,8 +26,6 @@ import org.asteriskjava.manager.*;
 import org.asteriskjava.manager.action.*;
 import org.asteriskjava.manager.event.*;
 import org.asteriskjava.manager.response.*;
-import org.asteriskjava.pbx.PBXFactory;
-import org.asteriskjava.pbx.internal.core.AsteriskPBX;
 import org.asteriskjava.util.AstUtil;
 import org.asteriskjava.util.DateUtil;
 import org.asteriskjava.util.Log;
@@ -790,6 +788,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
      * delegated to the dispatchEvent method.
      */
     public void onManagerEvent(ManagerEvent event) {
+        logger.info(event);
         long start = System.currentTimeMillis();
         // Handle Channel related events
         if (event instanceof ConnectEvent) {
@@ -800,7 +799,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             channelManager.handleNewChannelEvent((NewChannelEvent) event);
         } else if (event instanceof NewExtenEvent) {
 //            channelManager.handleNewExtenEvent((NewExtenEvent) event);
-        } else if (event instanceof NewStateEvent) {
+        } else if (event instanceof NewStateEvent) { // This UP
             channelManager.handleNewStateEvent((NewStateEvent) event);
         } else if (event instanceof NewCallerIdEvent) {
             channelManager.handleNewCallerIdEvent((NewCallerIdEvent) event);
@@ -887,6 +886,8 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             agentManager.handleAgentLoginEvent((AgentLoginEvent) event);
         } else if (event instanceof AgentLogoffEvent) {
             agentManager.handleAgentLogoffEvent((AgentLogoffEvent) event);
+        } else if (event instanceof DialStateEvent) {
+            channelManager.handleDialStateEvent((DialStateEvent) event);
         } else if (event instanceof ExtensionStatusEvent
             || event instanceof QueueParamsEvent
             || event instanceof QueueStatusCompleteEvent
@@ -894,8 +895,8 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             || event instanceof StatusCompleteEvent
             || event instanceof SoftHangupRequestEvent
             || event instanceof HangupRequestEvent
-            || event instanceof DialStateEvent
-            || event instanceof NewConnectedLineEvent
+            || event instanceof DialStateEvent // This progress
+            || event instanceof NewConnectedLineEvent // This Down??
             || event instanceof BridgeLeaveEvent
             || event instanceof BridgeDestroyEvent
             || event instanceof BridgeEnterEvent
@@ -903,15 +904,11 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             || event instanceof HoldEvent
             || event instanceof UnholdEvent
             || event instanceof StatusEvent
-            || event instanceof DeviceStateChangeEvent
+            || event instanceof DeviceStateChangeEvent // This Inuse
             || event instanceof MessageWaitingEvent
             || event instanceof MusicOnHoldStartEvent
-            || event instanceof MusicOnHoldStopEvent) {
-        } else if (event instanceof ReloadEvent) {
-            AsteriskPBX pbx = (AsteriskPBX) PBXFactory.getActivePBX();
-            if (!pbx.isConnected()) {
-                pbx.reconnect();
-            }
+            || event instanceof MusicOnHoldStopEvent
+            || event instanceof ReloadEvent) {
         } else {
             logger.info("Skipped event " + event);
         }

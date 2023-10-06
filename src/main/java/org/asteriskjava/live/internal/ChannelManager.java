@@ -340,23 +340,39 @@ class ChannelManager {
     }
 
     public void handleDialStateEvent(DialStateEvent event) {
-//        if ("Ringing".equals(event.getDestChannelStateDesc())) {
+//        if ("Ringing".equals(event.getDestChannelStateDesc())) { // US: Commio has ringing
         if ("PROGRESS".equals(event.getDialStatus())) {
-            if (event.getDestUniqueId().startsWith("RVM2")) { // state of 2nd call
-                AsteriskChannelImpl existingChannel = getChannelImplById(event.getDestUniqueId());
+            String callUUID = event.getDestUniqueId();
+            if (Constants.is2ndRvm(callUUID)) { // state of 2nd call
+                AsteriskChannelImpl existingChannel = getChannelImplById(callUUID);
                 if (existingChannel != null) {
                     // Hangup 1st leg of RVM
-                    AsteriskChannelImpl channel1st = getChannelImplById(existingChannel.getRvm1stId());
+                    AsteriskChannelImpl channel1st = getChannelImplById(Constants.getRvm1stId(existingChannel.getId()));
                     if (channel1st != null) {
-                        logger.info(event.getDestUniqueId() + ": hangup 1st call");
+                        try {
+                            // Wait for 2nd call fully connected
+                            TimeUnit.SECONDS.sleep(2);
+                        } catch (Exception ignored) {
+                        }
+                        logger.info(callUUID + ": hangup 1st call");
                         channel1st.hangup(HangupCause.AST_CAUSE_BUSY);
                     }
                 }
-            } else if (event.getDestUniqueId().startsWith("RVM")) { // state of 1st call
-                AsteriskChannelImpl existingChannel = getChannelImplById(event.getDestUniqueId());
+            } else if (Constants.is1stRvm(callUUID)) { // state of 1st call
+                AsteriskChannelImpl existingChannel = getChannelImplById(callUUID);
                 if (existingChannel != null) {
-                    logger.info(event.getDestUniqueId() + ": change state to RING");
-                    existingChannel.stateChanged(event.getDateReceived(), ChannelState.RING);
+                    try {
+                        // Wait for 1st call fully established
+                        TimeUnit.SECONDS.sleep(3);
+                        existingChannel.stateChanged(event.getDateReceived(), ChannelState.RING);
+                        // Wait for 2nd call fully connected
+                        TimeUnit.SECONDS.sleep(6);
+                    } catch (Exception ignored) {
+                    }
+
+                    // Self hangup
+                    logger.info(callUUID + ": self hangup");
+                    existingChannel.hangup();
                 }
             }
         }

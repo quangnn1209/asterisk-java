@@ -860,12 +860,4 @@ class AsteriskChannelImpl extends AbstractLiveObject implements AsteriskChannel 
 
         return sb.toString();
     }
-
-    public boolean isRvm2nd() {
-        return this.id.startsWith("RVM2");
-    }
-
-    public String getRvm1stId() {
-        return this.id.replace("RVM2", "RVM");
-    }
 }

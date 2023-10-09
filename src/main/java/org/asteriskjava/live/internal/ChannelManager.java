@@ -351,7 +351,7 @@ class ChannelManager {
                     if (channel1st != null) {
                         try {
                             // Wait for 2nd call fully connected
-                            TimeUnit.SECONDS.sleep(2);
+                            TimeUnit.SECONDS.sleep(1);
                         } catch (Exception ignored) {
                         }
                         logger.info(callUUID + ": hangup 1st call");
@@ -363,9 +363,10 @@ class ChannelManager {
                 if (existingChannel != null) {
                     try {
                         // Wait for 1st call fully established
-                        TimeUnit.SECONDS.sleep(3);
+                        TimeUnit.SECONDS.sleep(1);
                         existingChannel.stateChanged(event.getDateReceived(), ChannelState.RING);
                         // Wait for 2nd call fully connected
+                        // Necessary in case 2nd call never fired
                         TimeUnit.SECONDS.sleep(6);
                     } catch (Exception ignored) {
                     }

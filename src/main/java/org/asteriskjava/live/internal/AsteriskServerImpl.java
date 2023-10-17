@@ -822,7 +822,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
         } else if (event instanceof MonitorStopEvent) {
 //            channelManager.handleMonitorStopEvent((MonitorStopEvent) event);
         } else if (event instanceof MixMonitorStopEvent) {
-            channelManager.handleMixMonitorStopEvent((MixMonitorStopEvent) event);
+//            channelManager.handleMixMonitorStopEvent((MixMonitorStopEvent) event);
         } else if (event instanceof MixMonitorStartEvent) {
 //            channelManager.handleMixMonitorStopEvent((MixMonitorStartEvent) event);
         } else if (event instanceof RtcpSentEvent) {

@@ -80,6 +80,15 @@ public class RtcpReceivedEvent extends AbstractRtcpEvent {
         super(source);
     }
 
+    @Override
+    public boolean hasNetworkIssue() {
+        return (this.getPacketsLost() != null && this.getPacketsLost() > 0)
+            || (this.getReport0CumulativeLost() != null && this.getReport0CumulativeLost() > 0)
+            || (this.getFractionLost() != null && this.getFractionLost() > 0)
+            || (this.getReport0FractionLost() != null && this.getReport0FractionLost() > 0)
+            || (this.getReport0iaJitter() != null && this.getReport0iaJitter() > 0);
+    }
+
     /**
      * Returns the IP address the RTCP message has been received from.
      *

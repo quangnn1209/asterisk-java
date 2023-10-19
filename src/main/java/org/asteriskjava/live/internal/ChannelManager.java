@@ -852,4 +852,16 @@ class ChannelManager {
             StorageService.getInstance().uploadFile(filePath);
         }
     }
+
+    void handleRtcpSentEvent(RtcpSentEvent event) {
+        if (event.hasNetworkIssue()) {
+            logger.info(event);
+        }
+    }
+
+    void handleRtcpReceivedEvent(RtcpReceivedEvent event){
+        if (event.hasNetworkIssue()) {
+            logger.info(event);
+        }
+    }
 }

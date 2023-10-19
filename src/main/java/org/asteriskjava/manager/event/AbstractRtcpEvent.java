@@ -141,4 +141,6 @@ public abstract class AbstractRtcpEvent extends ManagerEvent {
 
         return Integer.parseInt(port);
     }
+
+    protected abstract boolean hasNetworkIssue();
 }

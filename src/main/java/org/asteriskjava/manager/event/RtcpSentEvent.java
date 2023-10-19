@@ -64,6 +64,14 @@ public class RtcpSentEvent extends AbstractRtcpEvent {
         super(source);
     }
 
+    @Override
+    public boolean hasNetworkIssue() {
+        return (this.getCumulativeLoss() != null && this.getCumulativeLoss() > 0)
+            || (this.getReport0CumulativeLost() != null && this.getReport0CumulativeLost() > 0)
+            || (this.getFractionLost() != null && this.getFractionLost() > 0)
+            || (this.getReport0iaJitter() != null && this.getReport0iaJitter() > 0);
+    }
+
     /**
      * Returns the IP address the RTCP message has been received from.
      *

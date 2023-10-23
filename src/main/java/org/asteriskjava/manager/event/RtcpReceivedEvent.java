@@ -86,7 +86,8 @@ public class RtcpReceivedEvent extends AbstractRtcpEvent {
             || (this.getReport0CumulativeLost() != null && this.getReport0CumulativeLost() > 0)
             || (this.getFractionLost() != null && this.getFractionLost() > 0)
             || (this.getReport0FractionLost() != null && this.getReport0FractionLost() > 0)
-            || (this.getReport0iaJitter() != null && this.getReport0iaJitter() > 0);
+//            || (this.getReport0iaJitter() != null && this.getReport0iaJitter() > 0)
+            ;
     }
 
     /**

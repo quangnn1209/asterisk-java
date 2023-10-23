@@ -69,7 +69,8 @@ public class RtcpSentEvent extends AbstractRtcpEvent {
         return (this.getCumulativeLoss() != null && this.getCumulativeLoss() > 0)
             || (this.getReport0CumulativeLost() != null && this.getReport0CumulativeLost() > 0)
             || (this.getFractionLost() != null && this.getFractionLost() > 0)
-            || (this.getReport0iaJitter() != null && this.getReport0iaJitter() > 0);
+//            || (this.getReport0iaJitter() != null && this.getReport0iaJitter() > 0)
+            ;
     }
 
     /**

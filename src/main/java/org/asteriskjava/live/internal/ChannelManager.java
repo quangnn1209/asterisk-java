@@ -839,20 +839,6 @@ class ChannelManager {
         logger.info("Channel " + channel.getName() + " is not monitored");
     }
 
-    void handleMixMonitorStopEvent(MixMonitorStopEvent event) {
-        final AsteriskChannelImpl channel = getChannelImplById(event.getUniqueId());
-
-        if (channel == null) {
-            logger.info("Ignored MonitorStopEvent for unknown channel " + event.getChannel());
-            return;
-        }
-
-        String filePath = channel.getVariable(Constants.CALL_RECORDING);
-        if (filePath != null) {
-            StorageService.getInstance().uploadFile(filePath);
-        }
-    }
-
     void handleRtcpSentEvent(RtcpSentEvent event) {
         if (event.hasNetworkIssue()) {
             logger.info(event);

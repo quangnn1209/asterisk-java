@@ -79,7 +79,7 @@ public class DialActivityImpl extends ActivityHelper<DialActivity> implements Di
         try (Dial nr = new Dial(this.toCallerID.toString())) {
             DialActivityImpl.logger.debug("*******************************************************************************");
             DialActivityImpl.logger.debug("***********                    begin dial out                  ****************");
-            DialActivityImpl.logger.info("***********               " + this._accepting + "             ****************");
+            DialActivityImpl.logger.debug("***********               " + this._accepting + "             ****************");
             DialActivityImpl.logger.debug("*******************************************************************************");
 
             //TODO: Textback

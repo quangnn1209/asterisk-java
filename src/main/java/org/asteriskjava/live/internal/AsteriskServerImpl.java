@@ -873,7 +873,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             // fromaddress='/10.168.0.102',
             // theirlastsr=null,
             // systemHashcode=696580469]
-            channelManager.handleRtcpSentEvent((RtcpSentEvent) event);
+//            channelManager.handleRtcpSentEvent((RtcpSentEvent) event);
         } else if (event instanceof RtcpReceivedEvent) {
             // org.asteriskjava.manager.event.RtcpReceivedEvent[dateReceived='Fri Oct 06 13:55:45 UTC 2023',
             // privilege='reporting,all',
@@ -927,7 +927,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             // report0iajitter='3',
             // fromaddress='/54.244.51.174',
             // systemHashcode=1764078536]
-            channelManager.handleRtcpReceivedEvent((RtcpReceivedEvent) event);
+//            channelManager.handleRtcpReceivedEvent((RtcpReceivedEvent) event);
         }
         // End of channel related events
         // Handle parking related event

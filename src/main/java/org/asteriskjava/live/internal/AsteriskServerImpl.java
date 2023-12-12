@@ -1006,7 +1006,8 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
             || event instanceof MessageWaitingEvent
             || event instanceof MusicOnHoldStartEvent
             || event instanceof MusicOnHoldStopEvent
-            || event instanceof ReloadEvent) {
+            || event instanceof ReloadEvent
+            || event instanceof BlindTransferEvent) {
         } else {
             logger.info("Skipped event " + event);
         }
@@ -1014,7 +1015,7 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
 
         long executeTime = System.currentTimeMillis() - start;
         if (executeTime > 1000) {
-            logger.info(event + " " + (System.currentTimeMillis() - start) + "ms");
+//            logger.info(event + " " + (System.currentTimeMillis() - start) + "ms");
         }
         // dispatch the events to the chainListener if they exist.
 //        fireChainListeners(event);

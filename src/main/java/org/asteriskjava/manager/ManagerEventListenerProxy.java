@@ -31,6 +31,7 @@ import java.util.concurrent.*;
  * @since 0.3
  */
 public class ManagerEventListenerProxy implements ManagerEventListener {
+    private final int MIN_CORE_SIZE = 500;
     protected Log logger = LogFactory.getLog(getClass());
     private final ThreadPoolExecutor executor;
     private final ManagerEventListener target;
@@ -44,7 +45,7 @@ public class ManagerEventListenerProxy implements ManagerEventListener {
      * @see Executors#newSingleThreadExecutor(ThreadFactory)
      */
     public ManagerEventListenerProxy(ManagerEventListener target) {
-        executor = new ThreadPoolExecutor(100, 10000, 500, TimeUnit.MILLISECONDS,
+        executor = new ThreadPoolExecutor(MIN_CORE_SIZE, Integer.MAX_VALUE, 100, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<>(), new DaemonThreadFactory());
 
         this.target = target;
@@ -64,7 +65,7 @@ public class ManagerEventListenerProxy implements ManagerEventListener {
             }
         });
         int queueSize = executor.getQueue().size();
-        if (queueSize > 50) {
+        if (queueSize > MIN_CORE_SIZE) {
             logger.info(executor.getActiveCount() + " active, " + executor.getQueue().size() + " threads in queue");
         }
     }//onManagerEvent

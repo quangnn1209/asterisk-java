@@ -1,6 +1,7 @@
 package org.asteriskjava.pbx.internal.core;
 
 import org.asteriskjava.AsteriskVersion;
+import org.asteriskjava.live.internal.Constants;
 import org.asteriskjava.manager.*;
 import org.asteriskjava.pbx.*;
 import org.asteriskjava.pbx.asterisk.wrap.actions.*;
@@ -300,6 +301,7 @@ class CoherentManagerConnection implements FilteredManagerListener<ManagerEvent>
             return convertedResponse;
         }
 
+        Constants.AST_RUNNING = false;
         throw new IllegalStateException("not connected.");
     }
 

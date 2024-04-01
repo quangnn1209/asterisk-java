@@ -16,6 +16,7 @@ public class Constants {
     public static String CALL_UUID = "Call-UUID";
     public static String GCP_PROJECT_ID = "glassy-augury-248712";
     public static String CALL_RECORDING = "Call-Recording";
+    public static volatile boolean AST_RUNNING = true;
 
     public static boolean is1stRvm(String callUUID) {
         return callUUID != null && callUUID.startsWith("RVM") && !callUUID.startsWith("RVM2");

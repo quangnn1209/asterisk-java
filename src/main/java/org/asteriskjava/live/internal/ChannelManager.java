@@ -155,7 +155,7 @@ class ChannelManager {
         channel.stateChanged(dateOfCreation, state);
         addChannel(channel);
 
-        logger.info(uniqueId + ": Adding channel " + channel.getName() + "(" + channel.getId() + ")");
+//        logger.info(uniqueId + ": Adding channel " + channel.getName() + "(" + channel.getId() + ")");
         server.fireNewAsteriskChannel(channel);
         return channel;
     }// addNewChannel
@@ -354,7 +354,7 @@ class ChannelManager {
                             TimeUnit.SECONDS.sleep(1);
                         } catch (Exception ignored) {
                         }
-                        logger.info(callUUID + ": hangup 1st call");
+//                        logger.info(callUUID + ": hangup 1st call");
                         channel1st.hangup(HangupCause.AST_CAUSE_BUSY);
                     }
                 }
@@ -372,7 +372,7 @@ class ChannelManager {
                     }
 
                     // Self hangup
-                    logger.info(callUUID + ": self hangup");
+//                    logger.info(callUUID + ": self hangup");
                     existingChannel.hangup();
                 }
             }

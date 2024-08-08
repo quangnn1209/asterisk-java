@@ -57,7 +57,7 @@ public class DialCommand extends AbstractAgiCommand {
             command += separator + escapeAndQuote(options);
         }
 
-        logger.info(command);
+//        logger.info(command);
 
         return command;
     }

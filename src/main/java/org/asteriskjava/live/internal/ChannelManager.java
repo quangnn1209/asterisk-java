@@ -211,7 +211,7 @@ class ChannelManager {
         }
 
         if (isNew) {
-            logger.info("Adding new channel " + channel.getName());
+//            logger.info("Adding new channel " + channel.getName());
             addChannel(channel);
             server.fireNewAsteriskChannel(channel);
         }
@@ -523,7 +523,7 @@ class ChannelManager {
             channel.hungup(event.getDateReceived(), cause, event.getCauseTxt());
         }
 
-        logger.info(channel.getId() + " " + channel.getName() + " hangup (" + cause + ")");
+//        logger.info(channel.getId() + " " + channel.getName() + " hangup (" + cause + ")");
     }
 
     void handleDialEvent(DialEvent event) {
@@ -547,7 +547,7 @@ class ChannelManager {
             return;
         } // i
 
-        logger.info(sourceChannel.getName() + " dialed " + destinationChannel.getName());
+//        logger.info(sourceChannel.getName() + " dialed " + destinationChannel.getName());
         getTraceId(sourceChannel);
         getTraceId(destinationChannel);
         try (LockCloser closer = sourceChannel.withLock()) {

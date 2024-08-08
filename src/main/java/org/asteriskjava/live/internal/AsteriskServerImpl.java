@@ -788,7 +788,10 @@ public class AsteriskServerImpl extends Lockable implements AsteriskServer, Mana
      * delegated to the dispatchEvent method.
      */
     public void onManagerEvent(ManagerEvent event) {
-//        logger.info(event);
+//        if (event.toString().contains("OPTIONS")) {
+//            logger.info(event);
+//        }
+
         long start = System.currentTimeMillis();
         // Handle Channel related events
         if (event instanceof ConnectEvent) {

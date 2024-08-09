@@ -340,6 +340,7 @@ class ChannelManager {
     }
 
     public void handleDialStateEvent(DialStateEvent event) {
+//        logger.info("handleDialStateEvent: " + event);
 //        if ("Ringing".equals(event.getDestChannelStateDesc())) { // US: Commio has ringing
         if ("PROGRESS".equals(event.getDialStatus())) {
             String callUUID = event.getDestUniqueId();
@@ -547,9 +548,15 @@ class ChannelManager {
             return;
         } // i
 
+        // TODO: Set var to channels
+//        if (DialEvent.DIALSTATUS_ANSWER.equals(event.getDialStatus())) {
+            logger.info("handleDialEvent: " + event);
+//            sourceChannel.setVariable(AsteriskChannel.VAR_AJ_DIAL_STATUS, event.getDialStatus());
+//        }
+
 //        logger.info(sourceChannel.getName() + " dialed " + destinationChannel.getName());
-        getTraceId(sourceChannel);
-        getTraceId(destinationChannel);
+//        getTraceId(sourceChannel);
+//        getTraceId(destinationChannel);
         try (LockCloser closer = sourceChannel.withLock()) {
             sourceChannel.channelDialed(event.getDateReceived(), destinationChannel);
         }
@@ -572,7 +579,7 @@ class ChannelManager {
         }
 
         if (event.isLink()) {
-            logger.info("Linking channels " + channel1.getName() + " and " + channel2.getName());
+//            logger.info("Linking channels " + channel1.getName() + " and " + channel2.getName());
             try (LockCloser closer = channel1.withLock()) {
                 channel1.channelLinked(event.getDateReceived(), channel2);
             }
@@ -583,7 +590,7 @@ class ChannelManager {
         }
 
         if (event.isUnlink()) {
-            logger.info("Unlinking channels " + channel1.getName() + " and " + channel2.getName());
+//            logger.info("Unlinking channels " + channel1.getName() + " and " + channel2.getName());
             try (LockCloser closer = channel1.withLock()) {
                 channel1.channelUnlinked(event.getDateReceived());
             }
@@ -845,7 +852,7 @@ class ChannelManager {
         }
     }
 
-    void handleRtcpReceivedEvent(RtcpReceivedEvent event){
+    void handleRtcpReceivedEvent(RtcpReceivedEvent event) {
         if (event.hasNetworkIssue()) {
             logger.info(event);
         }

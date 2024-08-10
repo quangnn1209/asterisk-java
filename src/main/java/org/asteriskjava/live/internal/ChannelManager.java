@@ -548,9 +548,8 @@ class ChannelManager {
             return;
         } // i
 
-        // TODO: Set var to channels
 //        if (DialEvent.DIALSTATUS_ANSWER.equals(event.getDialStatus())) {
-            logger.info("handleDialEvent: " + event);
+//            logger.info("handleDialEvent: " + event);
 //            sourceChannel.setVariable(AsteriskChannel.VAR_AJ_DIAL_STATUS, event.getDialStatus());
 //        }
 
